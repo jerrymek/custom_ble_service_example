@@ -779,12 +779,8 @@ int main(void)
     ble_stack_init();
     gap_params_init();
     gatt_init();
-
-	  services_init();
-		advertising_init();
-
-
-
+    services_init();
+    advertising_init();
     conn_params_init();
     peer_manager_init();
 
