@@ -37,25 +37,13 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  */
-/** @file
- *
- * @defgroup ble_sdk_app_template_main main.c
- * @{
- * @ingroup ble_sdk_app_template
- * @brief Template project main file.
- *
- * This file contains a template for creating a new application. It has the code necessary to wakeup
- * from button, advertise, get a connection restart advertising on disconnect and if no new
- * connection created go back to system-off mode.
- * It can easily be used as a starting point for creating a new application, the comments identified
- * with 'YOUR_JOB' indicates where and how you can customize.
- */
+
+#include "our_service.h"
 
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
 
-#include "SEGGER_RTT.h"
 #include "nordic_common.h"
 #include "nrf.h"
 #include "app_error.h"
@@ -81,9 +69,11 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
-#include "ble_cus.h"
 
-#define DEVICE_NAME                     "myDevice"                              /**< Name of device. Will be included in the advertising data. */
+#include "our_service.h"
+
+
+#define DEVICE_NAME                     "OurCharacteristic"                       /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "NordicSemiconductor"                   /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
 
@@ -115,19 +105,23 @@
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
-BLE_CUS_DEF(m_cus);
 
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
-/* YOUR_JOB: Declare all services structure your application is using
- *  BLE_XYZ_DEF(m_xyz);
- */
+// FROM_SERVICE_TUTORIAL: Declare a service structure for our application
+ble_os_t m_our_service;
 
-// YOUR_JOB: Use UUIDs for service(s) used in your application.
-ble_uuid_t m_adv_uuids[] = 
+
+// OUR_JOB: Step 3.G, Declare an app_timer id variable and define our timer interval and define a timer interval
+APP_TIMER_DEF(m_our_char_timer_id);
+#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) //1000 ms intervals
+
+
+
+// Use UUIDs for service(s) used in your application.
+static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
 {
-    {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE} //,
-    //{CUSTOM_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN }
+    {BLE_UUID_OUR_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
 };
 
 
@@ -149,6 +143,31 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 {
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
+
+
+
+// ALREADY_DONE_FOR_YOU: This is a timer event handler
+static void timer_timeout_handler(void * p_context)
+{
+    // OUR_JOB: Step 3.F, Update temperature and characteristic value.
+		int32_t temperature = 0;      //Declare a variable holding temperature value
+                static int32_t previous_temperature=0;      //Declare a variable to store current temperature until next measurement. 
+
+		sd_temp_get(&temperature);    //Get temperature
+                
+
+                // Check if current temperature is different from last temperature
+                if(temperature != previous_temperature)
+                    {
+                      // If new temperature then send notification
+                      our_temperature_characteristic_update(&m_our_service, &temperature);
+                    }
+                
+                // Save current temperature until next measurement
+                previous_temperature = temperature;
+		nrf_gpio_pin_toggle(LED_4);
+}
+
 
 
 /**@brief Function for handling Peer Manager events.
@@ -248,6 +267,7 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
 }
 
 
+
 /**@brief Function for the Timer initialization.
  *
  * @details Initializes the timer module. This creates and starts application timers.
@@ -258,15 +278,10 @@ static void timers_init(void)
     ret_code_t err_code = app_timer_init();
     APP_ERROR_CHECK(err_code);
 
-    // Create timers.
 
-    /* YOUR_JOB: Create any timers to be used by the application.
-                 Below is an example of how to create a timer.
-                 For every new timer needed, increase the value of the macro APP_TIMER_MAX_TIMERS by
-                 one.
-       ret_code_t err_code;
-       err_code = app_timer_create(&m_app_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
-       APP_ERROR_CHECK(err_code); */
+    // OUR_JOB: Step 3.H, Initiate our timer
+    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
+
 }
 
 
@@ -287,10 +302,6 @@ static void gap_params_init(void)
                                           (const uint8_t *)DEVICE_NAME,
                                           strlen(DEVICE_NAME));
     APP_ERROR_CHECK(err_code);
-
-    /* YOUR_JOB: Use an appearance value matching the application's use case.
-       err_code = sd_ble_gap_appearance_set(BLE_APPEARANCE_);
-       APP_ERROR_CHECK(err_code); */
 
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
 
@@ -326,66 +337,25 @@ static void nrf_qwr_error_handler(uint32_t nrf_error)
 }
 
 
-/**@brief Function for handling the YYY Service events.
- * YOUR_JOB implement a service handler function depending on the event the service you are using can generate
- *
- * @details This function will be called for all YY Service events which are passed to
- *          the application.
- *
- * @param[in]   p_yy_service   YY Service structure.
- * @param[in]   p_evt          Event received from the YY Service.
- *
- *
-static void on_yys_evt(ble_yy_service_t     * p_yy_service,
-                       ble_yy_service_evt_t * p_evt)
-{
-    switch (p_evt->evt_type)
-    {
-        case BLE_YY_NAME_EVT_WRITE:
-            APPL_LOG("[APPL]: charact written with value %s. ", p_evt->params.char_xx.value.p_str);
-            break;
-
-        default:
-            // No implementation needed.
-            break;
-    }
-}
-*/
-
-/** Initialize Queued Write Module.
- */
-static void qwr_init(void)
-{
-    ret_code_t         err_code;
-    nrf_ble_qwr_init_t qwr_init = {0};
-
-    qwr_init.error_handler = nrf_qwr_error_handler;
-
-    err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
-    SEGGER_RTT_printf(0, "err_code=0x%x\n", err_code);
-    APP_ERROR_CHECK(err_code);
-}
-
-/**@brief Initialize CUS Service init structure to zero.
- */
-static void cust_init(void)
-{
-    ret_code_t         err_code;
-    ble_cus_init_t     cus_init;
-
-    memset(&cus_init, 0, sizeof(cus_init));
-	
-    err_code = ble_cus_init(&m_cus, &cus_init);
-    SEGGER_RTT_printf(0, "err_code=0x%x\n", err_code);
-    APP_ERROR_CHECK(err_code);	
-}
 
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
 {
-    qwr_init();
-    cust_init();
+
+	
+		uint32_t         err_code;
+    nrf_ble_qwr_init_t qwr_init = {0};
+
+    // Initialize Queued Write Module.
+    qwr_init.error_handler = nrf_qwr_error_handler;
+
+    err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
+    APP_ERROR_CHECK(err_code);
+
+    //FROM_SERVICE_TUTORIAL: Add code to initialize the services used by the application.
+    our_service_init(&m_our_service);
+
 }
 
 
@@ -448,11 +418,11 @@ static void conn_params_init(void)
  */
 static void application_timers_start(void)
 {
-    /* YOUR_JOB: Start your timers. below is an example of how to start a timer.
-       ret_code_t err_code;
-       err_code = app_timer_start(m_app_timer_id, TIMER_INTERVAL, NULL);
-       APP_ERROR_CHECK(err_code); */
 
+    // OUR_JOB: Step 3.I, Start our timer
+    //app_timer_start(m_our_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
+    
+    //To update temperature only when in a connection then don't call app_timer_start() here, but in ble_event_handler()
 }
 
 
@@ -473,7 +443,6 @@ static void sleep_mode_enter(void)
 
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
     err_code = sd_power_system_off();
-    SEGGER_RTT_printf(0, "err_code=0x%x\n", err_code);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -514,12 +483,15 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
 static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 {
     ret_code_t err_code = NRF_SUCCESS;
+		
 
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_DISCONNECTED:
             NRF_LOG_INFO("Disconnected.");
             // LED indication will be changed when advertising starts.
+ 
+
             break;
 
         case BLE_GAP_EVT_CONNECTED:
@@ -529,6 +501,9 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
+
+            //When connected; start our timer to start regular temperature measurements
+            app_timer_start(m_our_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -563,6 +538,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             // No implementation needed.
             break;
     }
+
+		
 }
 
 
@@ -589,6 +566,13 @@ static void ble_stack_init(void)
 
     // Register a handler for BLE events.
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
+
+    //OUR_JOB: Step 3.C Set up a BLE event observer to call ble_our_service_on_ble_evt() to do housekeeping of ble connections related to our service and characteristics.
+    NRF_SDH_BLE_OBSERVER(m_our_service_observer, APP_BLE_OBSERVER_PRIO, ble_our_service_on_ble_evt, (void*) &m_our_service);
+	
+		
+
+	
 }
 
 
@@ -691,9 +675,12 @@ static void advertising_init(void)
     init.advdata.name_type               = BLE_ADVDATA_FULL_NAME;
     init.advdata.include_appearance      = true;
     init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
-    init.advdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
-    init.advdata.uuids_complete.p_uuids  = m_adv_uuids;
 
+	
+		init.srdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
+		init.srdata.uuids_complete.p_uuids = m_adv_uuids;
+		
+	
     init.config.ble_adv_fast_enabled  = true;
     init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;
     init.config.ble_adv_fast_timeout  = APP_ADV_DURATION;
@@ -782,7 +769,7 @@ static void advertising_start(bool erase_bonds)
  */
 int main(void)
 {
-    bool erase_bonds = true;
+    bool erase_bonds;
 
     // Initialize.
     log_init();
@@ -792,13 +779,17 @@ int main(void)
     ble_stack_init();
     gap_params_init();
     gatt_init();
-    services_init();
-    advertising_init();
+
+	  services_init();
+		advertising_init();
+
+
+
     conn_params_init();
     peer_manager_init();
 
     // Start execution.
-    NRF_LOG_INFO("Template example started.");
+    NRF_LOG_INFO("OurCharacteristics tutorial started.");
     application_timers_start();
 
     advertising_start(erase_bonds);
