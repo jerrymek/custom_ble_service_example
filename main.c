@@ -73,7 +73,7 @@
 #include "our_service.h"
 
 
-#define DEVICE_NAME                     "OurCharacteristic"                       /**< Name of device. Will be included in the advertising data. */
+#define DEVICE_NAME                     "OurCharacteristic"                     /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "NordicSemiconductor"                   /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
 
@@ -150,22 +150,22 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 static void timer_timeout_handler(void * p_context)
 {
     // OUR_JOB: Step 3.F, Update temperature and characteristic value.
-		int32_t temperature = 0;      //Declare a variable holding temperature value
-                static int32_t previous_temperature=0;      //Declare a variable to store current temperature until next measurement. 
+    int32_t temperature = 0;      //Declare a variable holding temperature value
+    static int32_t previous_temperature=0;      //Declare a variable to store current temperature until next measurement. 
 
-		sd_temp_get(&temperature);    //Get temperature
+    sd_temp_get(&temperature);    //Get temperature
                 
 
-                // Check if current temperature is different from last temperature
-                if(temperature != previous_temperature)
-                    {
-                      // If new temperature then send notification
-                      our_temperature_characteristic_update(&m_our_service, &temperature);
-                    }
+    // Check if current temperature is different from last temperature
+    if(temperature != previous_temperature)
+    {
+	// If new temperature then send notification
+	our_temperature_characteristic_update(&m_our_service, &temperature);
+    }
                 
-                // Save current temperature until next measurement
-                previous_temperature = temperature;
-		nrf_gpio_pin_toggle(LED_4);
+    // Save current temperature until next measurement
+    previous_temperature = temperature;
+    nrf_gpio_pin_toggle(LED_4);
 }
 
 
@@ -180,89 +180,89 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
 
     switch (p_evt->evt_id)
     {
-        case PM_EVT_BONDED_PEER_CONNECTED:
-        {
-            NRF_LOG_INFO("Connected to a previously bonded device.");
-        } break;
+    case PM_EVT_BONDED_PEER_CONNECTED:
+    {
+	NRF_LOG_INFO("Connected to a previously bonded device.");
+    } break;
 
-        case PM_EVT_CONN_SEC_SUCCEEDED:
-        {
-            NRF_LOG_INFO("Connection secured: role: %d, conn_handle: 0x%x, procedure: %d.",
-                         ble_conn_state_role(p_evt->conn_handle),
-                         p_evt->conn_handle,
-                         p_evt->params.conn_sec_succeeded.procedure);
-        } break;
+    case PM_EVT_CONN_SEC_SUCCEEDED:
+    {
+	NRF_LOG_INFO("Connection secured: role: %d, conn_handle: 0x%x, procedure: %d.",
+		     ble_conn_state_role(p_evt->conn_handle),
+		     p_evt->conn_handle,
+		     p_evt->params.conn_sec_succeeded.procedure);
+    } break;
 
-        case PM_EVT_CONN_SEC_FAILED:
-        {
-            /* Often, when securing fails, it shouldn't be restarted, for security reasons.
-             * Other times, it can be restarted directly.
-             * Sometimes it can be restarted, but only after changing some Security Parameters.
-             * Sometimes, it cannot be restarted until the link is disconnected and reconnected.
-             * Sometimes it is impossible, to secure the link, or the peer device does not support it.
-             * How to handle this error is highly application dependent. */
-        } break;
+    case PM_EVT_CONN_SEC_FAILED:
+    {
+	/* Often, when securing fails, it shouldn't be restarted, for security reasons.
+	 * Other times, it can be restarted directly.
+	 * Sometimes it can be restarted, but only after changing some Security Parameters.
+	 * Sometimes, it cannot be restarted until the link is disconnected and reconnected.
+	 * Sometimes it is impossible, to secure the link, or the peer device does not support it.
+	 * How to handle this error is highly application dependent. */
+    } break;
 
-        case PM_EVT_CONN_SEC_CONFIG_REQ:
-        {
-            // Reject pairing request from an already bonded peer.
-            pm_conn_sec_config_t conn_sec_config = {.allow_repairing = false};
-            pm_conn_sec_config_reply(p_evt->conn_handle, &conn_sec_config);
-        } break;
+    case PM_EVT_CONN_SEC_CONFIG_REQ:
+    {
+	// Reject pairing request from an already bonded peer.
+	pm_conn_sec_config_t conn_sec_config = {.allow_repairing = false};
+	pm_conn_sec_config_reply(p_evt->conn_handle, &conn_sec_config);
+    } break;
 
-        case PM_EVT_STORAGE_FULL:
-        {
-            // Run garbage collection on the flash.
-            err_code = fds_gc();
-            if (err_code == FDS_ERR_NO_SPACE_IN_QUEUES)
-            {
-                // Retry.
-            }
-            else
-            {
-                APP_ERROR_CHECK(err_code);
-            }
-        } break;
+    case PM_EVT_STORAGE_FULL:
+    {
+	// Run garbage collection on the flash.
+	err_code = fds_gc();
+	if (err_code == FDS_ERR_NO_SPACE_IN_QUEUES)
+	{
+	    // Retry.
+	}
+	else
+	{
+	    APP_ERROR_CHECK(err_code);
+	}
+    } break;
 
-        case PM_EVT_PEERS_DELETE_SUCCEEDED:
-        {
-            advertising_start(false);
-        } break;
+    case PM_EVT_PEERS_DELETE_SUCCEEDED:
+    {
+	advertising_start(false);
+    } break;
 
-        case PM_EVT_PEER_DATA_UPDATE_FAILED:
-        {
-            // Assert.
-            APP_ERROR_CHECK(p_evt->params.peer_data_update_failed.error);
-        } break;
+    case PM_EVT_PEER_DATA_UPDATE_FAILED:
+    {
+	// Assert.
+	APP_ERROR_CHECK(p_evt->params.peer_data_update_failed.error);
+    } break;
 
-        case PM_EVT_PEER_DELETE_FAILED:
-        {
-            // Assert.
-            APP_ERROR_CHECK(p_evt->params.peer_delete_failed.error);
-        } break;
+    case PM_EVT_PEER_DELETE_FAILED:
+    {
+	// Assert.
+	APP_ERROR_CHECK(p_evt->params.peer_delete_failed.error);
+    } break;
 
-        case PM_EVT_PEERS_DELETE_FAILED:
-        {
-            // Assert.
-            APP_ERROR_CHECK(p_evt->params.peers_delete_failed_evt.error);
-        } break;
+    case PM_EVT_PEERS_DELETE_FAILED:
+    {
+	// Assert.
+	APP_ERROR_CHECK(p_evt->params.peers_delete_failed_evt.error);
+    } break;
 
-        case PM_EVT_ERROR_UNEXPECTED:
-        {
-            // Assert.
-            APP_ERROR_CHECK(p_evt->params.error_unexpected.error);
-        } break;
+    case PM_EVT_ERROR_UNEXPECTED:
+    {
+	// Assert.
+	APP_ERROR_CHECK(p_evt->params.error_unexpected.error);
+    } break;
 
-        case PM_EVT_CONN_SEC_START:
-        case PM_EVT_PEER_DATA_UPDATE_SUCCEEDED:
-        case PM_EVT_PEER_DELETE_SUCCEEDED:
-        case PM_EVT_LOCAL_DB_CACHE_APPLIED:
-        case PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED:
-            // This can happen when the local DB has changed.
-        case PM_EVT_SERVICE_CHANGED_IND_SENT:
-        case PM_EVT_SERVICE_CHANGED_IND_CONFIRMED:
-        default:
-            break;
+    case PM_EVT_CONN_SEC_START:
+    case PM_EVT_PEER_DATA_UPDATE_SUCCEEDED:
+    case PM_EVT_PEER_DELETE_SUCCEEDED:
+    case PM_EVT_LOCAL_DB_CACHE_APPLIED:
+    case PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED:
+	// This can happen when the local DB has changed.
+    case PM_EVT_SERVICE_CHANGED_IND_SENT:
+    case PM_EVT_SERVICE_CHANGED_IND_CONFIRMED:
+    default:
+	break;
     }
 }
 
@@ -344,7 +344,7 @@ static void services_init(void)
 {
 
 	
-		uint32_t         err_code;
+    uint32_t         err_code;
     nrf_ble_qwr_init_t qwr_init = {0};
 
     // Initialize Queued Write Module.
@@ -459,18 +459,18 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
 
     switch (ble_adv_evt)
     {
-        case BLE_ADV_EVT_FAST:
-            NRF_LOG_INFO("Fast advertising.");
-            err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
-            APP_ERROR_CHECK(err_code);
-            break;
+    case BLE_ADV_EVT_FAST:
+	NRF_LOG_INFO("Fast advertising.");
+	err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
+	APP_ERROR_CHECK(err_code);
+	break;
 
-        case BLE_ADV_EVT_IDLE:
-            sleep_mode_enter();
-            break;
+    case BLE_ADV_EVT_IDLE:
+	sleep_mode_enter();
+	break;
 
-        default:
-            break;
+    default:
+	break;
     }
 }
 
@@ -487,56 +487,56 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
     switch (p_ble_evt->header.evt_id)
     {
-        case BLE_GAP_EVT_DISCONNECTED:
-            NRF_LOG_INFO("Disconnected.");
-            // LED indication will be changed when advertising starts.
+    case BLE_GAP_EVT_DISCONNECTED:
+	NRF_LOG_INFO("Disconnected.");
+	// LED indication will be changed when advertising starts.
  
 
-            break;
+	break;
 
-        case BLE_GAP_EVT_CONNECTED:
-            NRF_LOG_INFO("Connected.");
-            err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-            APP_ERROR_CHECK(err_code);
-            m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
-            err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
-            APP_ERROR_CHECK(err_code);
+    case BLE_GAP_EVT_CONNECTED:
+	NRF_LOG_INFO("Connected.");
+	err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
+	APP_ERROR_CHECK(err_code);
+	m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
+	err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
+	APP_ERROR_CHECK(err_code);
 
-            //When connected; start our timer to start regular temperature measurements
-            app_timer_start(m_our_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
-            break;
+	//When connected; start our timer to start regular temperature measurements
+	app_timer_start(m_our_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
+	break;
 
-        case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
-        {
-            NRF_LOG_DEBUG("PHY update request.");
-            ble_gap_phys_t const phys =
+    case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
+    {
+	NRF_LOG_DEBUG("PHY update request.");
+	ble_gap_phys_t const phys =
             {
                 .rx_phys = BLE_GAP_PHY_AUTO,
                 .tx_phys = BLE_GAP_PHY_AUTO,
             };
-            err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
-            APP_ERROR_CHECK(err_code);
-        } break;
+	err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
+	APP_ERROR_CHECK(err_code);
+    } break;
 
-        case BLE_GATTC_EVT_TIMEOUT:
-            // Disconnect on GATT Client timeout event.
-            NRF_LOG_DEBUG("GATT Client Timeout.");
-            err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gattc_evt.conn_handle,
-                                             BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-            APP_ERROR_CHECK(err_code);
-            break;
+    case BLE_GATTC_EVT_TIMEOUT:
+	// Disconnect on GATT Client timeout event.
+	NRF_LOG_DEBUG("GATT Client Timeout.");
+	err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gattc_evt.conn_handle,
+					 BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+	APP_ERROR_CHECK(err_code);
+	break;
 
-        case BLE_GATTS_EVT_TIMEOUT:
-            // Disconnect on GATT Server timeout event.
-            NRF_LOG_DEBUG("GATT Server Timeout.");
-            err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gatts_evt.conn_handle,
-                                             BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-            APP_ERROR_CHECK(err_code);
-            break;
+    case BLE_GATTS_EVT_TIMEOUT:
+	// Disconnect on GATT Server timeout event.
+	NRF_LOG_DEBUG("GATT Server Timeout.");
+	err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gatts_evt.conn_handle,
+					 BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+	APP_ERROR_CHECK(err_code);
+	break;
 
-        default:
-            // No implementation needed.
-            break;
+    default:
+	// No implementation needed.
+	break;
     }
 
 		
@@ -633,32 +633,32 @@ static void bsp_event_handler(bsp_event_t event)
 
     switch (event)
     {
-        case BSP_EVENT_SLEEP:
-            sleep_mode_enter();
-            break; // BSP_EVENT_SLEEP
+    case BSP_EVENT_SLEEP:
+	sleep_mode_enter();
+	break; // BSP_EVENT_SLEEP
 
-        case BSP_EVENT_DISCONNECT:
-            err_code = sd_ble_gap_disconnect(m_conn_handle,
-                                             BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-            if (err_code != NRF_ERROR_INVALID_STATE)
-            {
-                APP_ERROR_CHECK(err_code);
-            }
-            break; // BSP_EVENT_DISCONNECT
+    case BSP_EVENT_DISCONNECT:
+	err_code = sd_ble_gap_disconnect(m_conn_handle,
+					 BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+	if (err_code != NRF_ERROR_INVALID_STATE)
+	{
+	    APP_ERROR_CHECK(err_code);
+	}
+	break; // BSP_EVENT_DISCONNECT
 
-        case BSP_EVENT_WHITELIST_OFF:
-            if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
-            {
-                err_code = ble_advertising_restart_without_whitelist(&m_advertising);
-                if (err_code != NRF_ERROR_INVALID_STATE)
-                {
-                    APP_ERROR_CHECK(err_code);
-                }
-            }
-            break; // BSP_EVENT_KEY_0
+    case BSP_EVENT_WHITELIST_OFF:
+	if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
+	{
+	    err_code = ble_advertising_restart_without_whitelist(&m_advertising);
+	    if (err_code != NRF_ERROR_INVALID_STATE)
+	    {
+		APP_ERROR_CHECK(err_code);
+	    }
+	}
+	break; // BSP_EVENT_KEY_0
 
-        default:
-            break;
+    default:
+	break;
     }
 }
 
@@ -677,8 +677,8 @@ static void advertising_init(void)
     init.advdata.flags                   = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
 	
-		init.srdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
-		init.srdata.uuids_complete.p_uuids = m_adv_uuids;
+    init.srdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
+    init.srdata.uuids_complete.p_uuids = m_adv_uuids;
 		
 	
     init.config.ble_adv_fast_enabled  = true;
