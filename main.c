@@ -37,11 +37,17 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+/** @file
+ *
+ * @defgroup precure_back_firmware_main main.c
+ * @{
+ * @ingroup precure_back_firmware
+ * @brief Precure Back Firmware for Core Unit.
+ *
+ */
 
-#include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-
 #include "nordic_common.h"
 #include "nrf.h"
 #include "app_error.h"
@@ -55,13 +61,16 @@
 #include "nrf_sdh_soc.h"
 #include "nrf_sdh_ble.h"
 #include "app_timer.h"
-#include "fds.h"
 #include "peer_manager.h"
 #include "bsp_btn_ble.h"
+#include "fds.h"
 #include "sensorsim.h"
-#include "ble_conn_state.h"
 #include "nrf_ble_gatt.h"
 #include "nrf_ble_qwr.h"
+#include "ble_conn_state.h"
+#include "ble_dis.h"
+#include "nrf_ble_bms.h"
+#include "nrf_ble_gatt.h"
 #include "nrf_pwr_mgmt.h"
 
 #include "nrf_log.h"
@@ -79,77 +88,68 @@
 #define APP_BLE_OBSERVER_PRIO           3                                       /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 #define APP_BLE_CONN_CFG_TAG            1                                       /**< A tag identifying the SoftDevice BLE configuration. */
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)        /**< Minimum acceptable connection interval (0.1 seconds). */
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(200, UNIT_1_25_MS)        /**< Maximum acceptable connection interval (0.2 second). */
-#define SLAVE_LATENCY                   0                                       /**< Slave latency. */
-#define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)         /**< Connection supervisory timeout (4 seconds). */
+#define SECOND_10_MS_UNITS              100                                     //!< Definition of 1 second, when 1 unit is 10 ms.
+#define MIN_CONN_INTERVAL               7                                       //!< Minimum acceptable connection interval (0.25 seconds), Connection interval uses 1.25 ms units.
+#define MAX_CONN_INTERVAL               400                                     //!< Maximum acceptable connection interval (0.5 second), Connection interval uses 1.25 ms units.
+#define SLAVE_LATENCY                   0                                       //!< Slave latency.
+#define CONN_SUP_TIMEOUT                (4 * SECOND_10_MS_UNITS)                //!< Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units.
 
-#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                   /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
-#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                  /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
-#define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       /**< Number of attempts before giving up the connection parameter negotiation. */
+#define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(15000)                  //!< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds).
+#define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(5000)                   //!< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds).
+#define MAX_CONN_PARAMS_UPDATE_COUNT    3                                       //!< Number of attempts before giving up the connection parameter negotiation.
 
-#define SEC_PARAM_BOND                  1                                       /**< Perform bonding. */
-#define SEC_PARAM_MITM                  0                                       /**< Man In The Middle protection not required. */
-#define SEC_PARAM_LESC                  0                                       /**< LE Secure Connections not enabled. */
-#define SEC_PARAM_KEYPRESS              0                                       /**< Keypress notifications not enabled. */
-#define SEC_PARAM_IO_CAPABILITIES       BLE_GAP_IO_CAPS_NONE                    /**< No I/O capabilities. */
-#define SEC_PARAM_OOB                   0                                       /**< Out Of Band data not available. */
-#define SEC_PARAM_MIN_KEY_SIZE          7                                       /**< Minimum encryption key size. */
-#define SEC_PARAM_MAX_KEY_SIZE          16                                      /**< Maximum encryption key size. */
+#define SEC_PARAM_BOND                  1                                       //!< Perform bonding.
+#define SEC_PARAM_MITM                  0                                       //!< Man In The Middle protection not required.
+#define SEC_PARAM_LESC                  0                                       //!< LE Secure Connections not enabled.
+#define SEC_PARAM_KEYPRESS              0                                       //!< Keypress notifications not enabled.
+#define SEC_PARAM_IO_CAPABILITIES       BLE_GAP_IO_CAPS_NONE                    //!< No I/O capabilities.
+#define SEC_PARAM_OOB                   0                                       //!< Out Of Band data not available.
+#define SEC_PARAM_MIN_KEY_SIZE          7                                       //!< Minimum encryption key size.
+#define SEC_PARAM_MAX_KEY_SIZE          16                                      //!< Maximum encryption key size.
 
-#define DEAD_BEEF                       0xDEADBEEF                              /**< Value used as error code on stack dump, can be used to identify stack location on stack unwind. */
+#define APP_ADV_FAST_INTERVAL           0x0028                                  //!< Fast advertising interval (in units of 0.625 ms. This value corresponds to 25 ms.).
+#define APP_ADV_DURATION                18000                                   //!< The advertising duration (180 seconds) in units of 10 milliseconds.
 
-
-NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
-NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
-BLE_ADVERTISING_DEF(m_advertising);                                             /**< Advertising module instance. */
-
-static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
-
-// FROM_SERVICE_TUTORIAL: Declare a service structure for our application
-ble_os_t m_sensor_service;
+#define MEM_BUFF_SIZE                   512
+#define DEAD_BEEF                       0xDEADBEEF                              //!< Value used as error code on stack dump, can be used to identify stack location on stack unwind.
 
 
-// OUR_JOB: Step 3.G, Declare an app_timer id variable and define our timer interval and define a timer interval
-APP_TIMER_DEF(m_our_char_timer_id);
-#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) //1000 ms intervals
+APP_TIMER_DEF(m_sec_req_timer_id);                                              //!< Security request timer. The timer lets us start pairing request if one does not arrive from the Central.
+NRF_BLE_QWR_DEF(m_qwr);                                                         //!< Context for the Queued Write module.
+NRF_BLE_BMS_DEF(m_bms);                                                         //!< Structure used to identify the Bond Management service.
+NRF_BLE_GATT_DEF(m_gatt);                                                       //!< GATT module instance.
+BLE_ADVERTISING_DEF(m_advertising);                                             //!< Advertising module instance.
 
+static uint16_t                      m_conn_handle = BLE_CONN_HANDLE_INVALID;   //!< Handle of the current connection.
+static uint8_t                       m_qwr_mem[MEM_BUFF_SIZE];                  //!< Write buffer for the Queued Write module.
+static ble_conn_state_user_flag_id_t m_bms_bonds_to_delete;                     //!< Flags used to identify bonds that should be deleted.
 
-
-// Use UUIDs for service(s) used in your application.
-static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
+static ble_uuid_t m_adv_uuids[] =                                               //!< Universally unique service identifiers.
 {
+    {BLE_UUID_BMS_SERVICE,  BLE_UUID_TYPE_BLE},
+    {BLE_UUID_DEVICE_INFORMATION_SERVICE, BLE_UUID_TYPE_BLE},
     {BLE_UUID_SENSOR_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
 };
 
+#ifdef USE_AUTHORIZATION_CODE
+static uint8_t m_auth_code[] = {'A', 'B', 'C', 'D'}; //0x41, 0x42, 0x43, 0x44
+static int m_auth_code_len = sizeof(m_auth_code);
+#endif
 
+ble_os_t m_sensor_service;
+// app_timer id variable and define our timer interval and define a timer interval
+APP_TIMER_DEF(m_our_char_timer_id);
+#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) //1000 ms intervals
+// Use UUIDs for service(s) used in your application.
 static void advertising_start(bool erase_bonds);
 
 
-/**@brief Callback function for asserts in the SoftDevice.
- *
- * @details This function will be called in case of an assert in the SoftDevice.
- *
- * @warning This handler is an example only and does not fit a final product. You need to analyze
- *          how your product is supposed to react in case of Assert.
- * @warning On assert from the SoftDevice, the system can only recover on reset.
- *
- * @param[in] line_num   Line number of the failing ASSERT call.
- * @param[in] file_name  File name of the failing ASSERT call.
- */
-void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
-{
-    app_error_handler(DEAD_BEEF, line_num, p_file_name);
-}
-
-
-
-// ALREADY_DONE_FOR_YOU: This is a timer event handler
+// timer event handler
 static void timer_timeout_handler(void * p_context)
 {
-    // OUR_JOB: Step 3.F, Update temperature and characteristic value.
-    int32_t temperature = 0;      //Declare a variable holding temperature value
-    static int32_t previous_temperature=0;      //Declare a variable to store current temperature until next measurement. 
+    // Update temperature and characteristic value.
+    int32_t temperature = 0;
+    static int32_t previous_temperature=0;
 
     sd_temp_get(&temperature);    //Get temperature
                 
@@ -166,6 +166,116 @@ static void timer_timeout_handler(void * p_context)
     nrf_gpio_pin_toggle(LED_4);
 }
 
+
+/**@brief Callback function for asserts in the SoftDevice.
+ *
+ * @details This function will be called in case of an assert in the SoftDevice.
+ *
+ * @warning This handler is an example only and does not fit a final product. You need to analyze
+ *          how your product is supposed to react in case of Assert.
+ * @warning On assert from the SoftDevice, the system can only recover on reset.
+ *
+ * @param[in]   line_num   Line number of the failing ASSERT call.
+ * @param[in]   file_name  File name of the failing ASSERT call.
+ */
+void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
+{
+    app_error_handler(DEAD_BEEF, line_num, p_file_name);
+}
+
+
+/**@brief Function for handling Queued Write Module errors.
+ *
+ * @details A pointer to this function will be passed to each service which may need to inform the
+ *          application about an error.
+ *
+ * @param[in]   nrf_error   Error code containing information about what went wrong.
+ */
+static void nrf_qwr_error_handler(uint32_t nrf_error)
+{
+    APP_ERROR_HANDLER(nrf_error);
+}
+
+
+/**@brief Function for handling Service errors.
+ *
+ * @details A pointer to this function will be passed to each service which may need to inform the
+ *          application about an error.
+ *
+ * @param[in]   nrf_error   Error code containing information about what went wrong.
+ */
+static void service_error_handler(uint32_t nrf_error)
+{
+    APP_ERROR_HANDLER(nrf_error);
+}
+
+
+/**@brief Function for handling advertising errors.
+ *
+ * @param[in] nrf_error  Error code containing information about what went wrong.
+ */
+static void ble_advertising_error_handler(uint32_t nrf_error)
+{
+    APP_ERROR_HANDLER(nrf_error);
+}
+
+
+/**@brief Clear bond information from persistent storage.
+ */
+static void delete_bonds(void)
+{
+    ret_code_t err_code;
+
+    NRF_LOG_INFO("Erase bonds!");
+
+    err_code = pm_peers_delete();
+    APP_ERROR_CHECK(err_code);
+}
+
+
+/**@brief Function for starting advertising.
+ */
+static void advertising_start(bool erase_bonds)
+{
+    if (erase_bonds == true)
+    {
+        delete_bonds();
+        // Advertising is started by PM_EVT_PEERS_DELETE_SUCCEEDED event.
+    }
+    else
+    {
+        uint32_t ret;
+
+        ret = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
+        APP_ERROR_CHECK(ret);
+    }
+}
+
+/**@brief Function for handling the Security Request timer timeout.
+ *
+ * @details This function will be called each time the Security Request timer expires.
+ *
+ * @param[in]   p_context   Pointer used for passing some arbitrary information (context) from the
+ *                          app_start_timer() call to the timeout handler.
+ */
+static void sec_req_timeout_handler(void * p_context)
+{
+    ret_code_t              err_code;
+    pm_conn_sec_status_t    status;
+
+    if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
+    {
+        err_code = pm_conn_sec_status_get(m_conn_handle, &status);
+        APP_ERROR_CHECK(err_code);
+
+        // If the link is still not secured by the peer, initiate security procedure.
+        if (!status.encrypted)
+        {
+            err_code = pm_conn_secure(m_conn_handle, false);
+            APP_ERROR_CHECK(err_code);
+        }
+    }
+}
 
 
 /**@brief Function for handling Peer Manager events.
@@ -229,7 +339,6 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
 
     case PM_EVT_PEER_DATA_UPDATE_FAILED:
     {
-	// Assert.
 	APP_ERROR_CHECK(p_evt->params.peer_data_update_failed.error);
     } break;
 
@@ -261,6 +370,65 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
     case PM_EVT_SERVICE_CHANGED_IND_CONFIRMED:
     default:
 	break;
+    }
+}
+
+
+/**@brief Function for marking the requester's bond for deletion.
+*/
+static void delete_requesting_bond(nrf_ble_bms_t const * p_bms)
+{
+    NRF_LOG_INFO("Client requested that bond to current device deleted");
+    ble_conn_state_user_flag_set(p_bms->conn_handle, m_bms_bonds_to_delete, true);
+}
+
+
+/**@brief Function for deleting a single bond if it does not belong to a connected peer.
+ *
+ * This will mark the bond for deferred deletion if the peer is connected.
+ */
+static void bond_delete(uint16_t conn_handle, void * p_context)
+{
+    UNUSED_PARAMETER(p_context);
+    ret_code_t   err_code;
+    pm_peer_id_t peer_id;
+
+    if (ble_conn_state_status(conn_handle) == BLE_CONN_STATUS_CONNECTED)
+    {
+        ble_conn_state_user_flag_set(conn_handle, m_bms_bonds_to_delete, true);
+    }
+    else
+    {
+        NRF_LOG_DEBUG("Attempting to delete bond.");
+        err_code = pm_peer_id_get(conn_handle, &peer_id);
+        if (err_code == NRF_SUCCESS)
+        {
+            err_code = pm_peer_delete(peer_id);
+            APP_ERROR_CHECK(err_code);
+            ble_conn_state_user_flag_set(conn_handle, m_bms_bonds_to_delete, false);
+        }
+    }
+}
+
+
+/**@brief Function for deleting all bonds
+*/
+static void delete_all_bonds(nrf_ble_bms_t const * p_bms)
+{
+    ret_code_t err_code;
+    uint16_t conn_handle;
+
+    NRF_LOG_INFO("Client requested that all bonds be deleted");
+
+    pm_peer_id_t peer_id = pm_next_peer_id_get(PM_PEER_ID_INVALID);
+    while (peer_id != PM_PEER_ID_INVALID)
+    {
+        err_code = pm_conn_handle_get(peer_id, &conn_handle);
+        APP_ERROR_CHECK(err_code);
+
+        bond_delete(conn_handle, NULL);
+
+        peer_id = pm_next_peer_id_get(peer_id);
     }
 }
 
@@ -322,38 +490,141 @@ static void gatt_init(void)
 }
 
 
-/**@brief Function for handling Queued Write Module errors.
- *
- * @details A pointer to this function will be passed to each service which may need to inform the
- *          application about an error.
- *
- * @param[in]   nrf_error   Error code containing information about what went wrong.
+/**@brief Function for handling events from bond management service.
  */
-static void nrf_qwr_error_handler(uint32_t nrf_error)
+void bms_evt_handler(nrf_ble_bms_t * p_ess, nrf_ble_bms_evt_t * p_evt)
 {
-    APP_ERROR_HANDLER(nrf_error);
+    ret_code_t err_code;
+    bool is_authorized = true;
+
+    switch (p_evt->evt_type)
+    {
+        case NRF_BLE_BMS_EVT_AUTH:
+            NRF_LOG_DEBUG("Authorization request.");
+#if USE_AUTHORIZATION_CODE
+            if ((p_evt->auth_code.len != m_auth_code_len) ||
+                (memcmp(m_auth_code, p_evt->auth_code.code, m_auth_code_len) != 0))
+            {
+                is_authorized = false;
+            }
+#endif
+            err_code = nrf_ble_bms_auth_response(&m_bms, is_authorized);
+            APP_ERROR_CHECK(err_code);
+    }
 }
 
 
+/**@brief Function for deleting all bet requesting device bonds
+*/
+static void delete_all_except_requesting_bond(nrf_ble_bms_t const * p_bms)
+{
+    ret_code_t err_code;
+    uint16_t conn_handle;
+
+    NRF_LOG_INFO("Client requested that all bonds except current bond be deleted");
+
+    pm_peer_id_t peer_id = pm_next_peer_id_get(PM_PEER_ID_INVALID);
+    while (peer_id != PM_PEER_ID_INVALID)
+    {
+        err_code = pm_conn_handle_get(peer_id, &conn_handle);
+        APP_ERROR_CHECK(err_code);
+
+        /* Do nothing if this is our own bond. */
+        if (conn_handle != p_bms->conn_handle)
+        {
+            bond_delete(conn_handle, NULL);
+        }
+
+        peer_id = pm_next_peer_id_get(peer_id);
+    }
+}
+
+
+/**@brief Function that Initialize the Bond Management Service
+ */
+static void bms_init(void)
+{
+    ret_code_t           err_code;
+    nrf_ble_bms_init_t   bms_init;
+
+    // 
+    memset(&bms_init, 0, sizeof(bms_init));
+
+    m_bms_bonds_to_delete        = ble_conn_state_user_flag_acquire();
+    bms_init.evt_handler         = bms_evt_handler;
+    bms_init.error_handler       = service_error_handler;
+#if USE_AUTHORIZATION_CODE
+    bms_init.feature.delete_requesting_auth         = true;
+    bms_init.feature.delete_all_auth                = true;
+    bms_init.feature.delete_all_but_requesting_auth = true;
+#else
+    bms_init.feature.delete_requesting              = true;
+    bms_init.feature.delete_all                     = true;
+    bms_init.feature.delete_all_but_requesting      = true;
+#endif
+    bms_init.bms_feature_sec_req = SEC_JUST_WORKS;
+    bms_init.bms_ctrlpt_sec_req  = SEC_JUST_WORKS;
+
+    bms_init.p_qwr                                       = &m_qwr;
+    bms_init.bond_callbacks.delete_requesting            = delete_requesting_bond;
+    bms_init.bond_callbacks.delete_all                   = delete_all_bonds;
+    bms_init.bond_callbacks.delete_all_except_requesting = delete_all_except_requesting_bond;
+
+    err_code = nrf_ble_bms_init(&m_bms, &bms_init);
+    APP_ERROR_CHECK(err_code);
+}
+
+uint16_t qwr_evt_handler(nrf_ble_qwr_t * p_qwr, nrf_ble_qwr_evt_t * p_evt)
+{
+    return nrf_ble_bms_on_qwr_evt(&m_bms, p_qwr, p_evt);
+}
+
+/**@brief Function that initialise the Initialize Queued Write Module
+ */
+static void qwr_init(void)
+{
+    ret_code_t           err_code;
+    nrf_ble_qwr_init_t   qwr_init;
+
+    memset(&qwr_init, 0, sizeof(qwr_init));
+//    qwr_init.mem_buffer.len   = MEM_BUFF_SIZE;
+//    qwr_init.mem_buffer.p_mem = m_qwr_mem;
+//    qwr_init.callback         = qwr_evt_handler;
+    qwr_init.error_handler    = nrf_qwr_error_handler;
+
+    err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
+    APP_ERROR_CHECK(err_code);
+}
+
+/**@brief Initialise the Device Information Service
+ */
+static void dis_init(void)
+{
+    ret_code_t           err_code;
+    ble_dis_init_t       dis_init;
+
+    memset(&dis_init, 0, sizeof(dis_init));
+
+    ble_srv_ascii_to_utf8(&dis_init.manufact_name_str, MANUFACTURER_NAME);
+
+//    dis_init.dis_char_rd_sec = SEC_OPEN;
+
+//    err_code = ble_dis_init(&dis_init);
+    APP_ERROR_CHECK(err_code);
+}
 
 /**@brief Function for initializing services that will be used by the application.
  */
 static void services_init(void)
 {
-
-	
     uint32_t         err_code;
-    nrf_ble_qwr_init_t qwr_init = {0};
 
-    // Initialize Queued Write Module.
-    qwr_init.error_handler = nrf_qwr_error_handler;
-
-    err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
-    APP_ERROR_CHECK(err_code);
+    qwr_init();
+    bms_init();
+    dis_init();
 
     //FROM_SERVICE_TUTORIAL: Add code to initialize the services used by the application.
     sensor_service_init(&m_sensor_service);
-
 }
 
 
@@ -603,21 +874,8 @@ static void peer_manager_init(void)
     err_code = pm_sec_params_set(&sec_param);
     APP_ERROR_CHECK(err_code);
 
-    err_code = pm_register(pm_evt_handler);
-    APP_ERROR_CHECK(err_code);
-}
-
-
-/**@brief Clear bond information from persistent storage.
- */
-static void delete_bonds(void)
-{
-    ret_code_t err_code;
-
-    NRF_LOG_INFO("Erase bonds!");
-
-    err_code = pm_peers_delete();
-    APP_ERROR_CHECK(err_code);
+//    err_code = pm_register(pm_evt_handler);
+//    APP_ERROR_CHECK(err_code);
 }
 
 
@@ -745,24 +1003,6 @@ static void idle_state_handle(void)
 }
 
 
-/**@brief Function for starting advertising.
- */
-static void advertising_start(bool erase_bonds)
-{
-    if (erase_bonds == true)
-    {
-        delete_bonds();
-        // Advertising is started by PM_EVT_PEERS_DELETED_SUCEEDED event
-    }
-    else
-    {
-        ret_code_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
-
-        APP_ERROR_CHECK(err_code);
-    }
-}
-
-
 /**@brief Function for application main entry.
  */
 int main(void)
@@ -783,7 +1023,7 @@ int main(void)
     peer_manager_init();
 
     // Start execution.
-    NRF_LOG_INFO("OurCharacteristics tutorial started.");
+    NRF_LOG_INFO("Precure Back Firmware started.");
     application_timers_start();
 
     advertising_start(erase_bonds);
