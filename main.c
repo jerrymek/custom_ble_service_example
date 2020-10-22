@@ -38,8 +38,6 @@
  * 
  */
 
-#include "our_service.h"
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -70,11 +68,11 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
-#include "our_service.h"
+#include "sensor_service.h"
 
 
-#define DEVICE_NAME                     "OurCharacteristic"                     /**< Name of device. Will be included in the advertising data. */
-#define MANUFACTURER_NAME               "NordicSemiconductor"                   /**< Manufacturer. Will be passed to Device Information Service. */
+#define DEVICE_NAME                     "Precure Back Core Unit"                /**< Name of device. Will be included in the advertising data. */
+#define MANUFACTURER_NAME               "Precure A/S"                           /**< Manufacturer. Will be passed to Device Information Service. */
 #define APP_ADV_INTERVAL                300                                     /**< The advertising interval (in units of 0.625 ms. This value corresponds to 187.5 ms). */
 
 #define APP_ADV_DURATION                18000                                   /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
@@ -109,7 +107,7 @@ BLE_ADVERTISING_DEF(m_advertising);                                             
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
 // FROM_SERVICE_TUTORIAL: Declare a service structure for our application
-ble_os_t m_our_service;
+ble_os_t m_sensor_service;
 
 
 // OUR_JOB: Step 3.G, Declare an app_timer id variable and define our timer interval and define a timer interval
@@ -121,7 +119,7 @@ APP_TIMER_DEF(m_our_char_timer_id);
 // Use UUIDs for service(s) used in your application.
 static ble_uuid_t m_adv_uuids[] =                                               /**< Universally unique service identifiers. */
 {
-    {BLE_UUID_OUR_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
+    {BLE_UUID_SENSOR_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
 };
 
 
@@ -160,7 +158,7 @@ static void timer_timeout_handler(void * p_context)
     if(temperature != previous_temperature)
     {
 	// If new temperature then send notification
-	our_temperature_characteristic_update(&m_our_service, &temperature);
+	our_temperature_characteristic_update(&m_sensor_service, &temperature);
     }
                 
     // Save current temperature until next measurement
@@ -354,7 +352,7 @@ static void services_init(void)
     APP_ERROR_CHECK(err_code);
 
     //FROM_SERVICE_TUTORIAL: Add code to initialize the services used by the application.
-    our_service_init(&m_our_service);
+    sensor_service_init(&m_sensor_service);
 
 }
 
@@ -567,8 +565,8 @@ static void ble_stack_init(void)
     // Register a handler for BLE events.
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
 
-    //OUR_JOB: Step 3.C Set up a BLE event observer to call ble_our_service_on_ble_evt() to do housekeeping of ble connections related to our service and characteristics.
-    NRF_SDH_BLE_OBSERVER(m_our_service_observer, APP_BLE_OBSERVER_PRIO, ble_our_service_on_ble_evt, (void*) &m_our_service);
+    //OUR_JOB: Step 3.C Set up a BLE event observer to call ble_sensor_service_on_ble_evt() to do housekeeping of ble connections related to sensor service and characteristics.
+    NRF_SDH_BLE_OBSERVER(m_sensor_service_observer, APP_BLE_OBSERVER_PRIO, ble_sensor_service_on_ble_evt, (void*) &m_sensor_service);
 	
 		
 

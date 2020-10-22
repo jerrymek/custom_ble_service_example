@@ -7,3 +7,5 @@
 *.ind
 *.ld
 TAGS
+*.jlink
+*.emSession
