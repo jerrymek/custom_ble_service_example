@@ -1,9 +1,9 @@
 <!DOCTYPE CrossStudio_Project_File>
 <solution
-  Name="custom_ble_service_example_pca10056_s140"
+  Name="Precure_Back_Firmware_pca10056_s140"
   target="8"
   version="2">
-  <project Name="custom_ble_service_example_pca10056_s140">
+  <project Name="Precure_Back_Firmware_pca10056_s140">
     <configuration
       Name="Common"
       arm_architecture="v7EM"
