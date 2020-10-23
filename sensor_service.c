@@ -1,3 +1,8 @@
+/**
+ * Copyright  2020 PreCure ApS
+ *
+ * All Rights Reserved
+ */
 
 #include <stdint.h>
 #include <string.h>
@@ -6,7 +11,8 @@
 #include "ble_srv_common.h"
 #include "app_error.h"
 
-// ALREADY_DONE_FOR_YOU: Declaration of a function that will take care of some housekeeping of ble connections related to sensor service and characteristic
+// Declaration of a function that will take care of some housekeeping of ble connections
+// related to sensor service and characteristic
 void ble_sensor_service_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context)
 {
     // Implement switch case handling BLE events related to sensor service. 
@@ -36,7 +42,7 @@ static uint32_t our_char_add(ble_os_t * p_sensor_service)
     // OUR_JOB: Step 2.A, Add a custom characteristic UUID
     uint32_t            err_code;
     ble_uuid_t          char_uuid;
-    ble_uuid128_t       base_uuid = BLE_UUID_SENSOR_SERVICE_BASE_UUID;
+    ble_uuid128_t       base_uuid = BLE_UUID_PRECURE_BACK_BASE_UUID;
     char_uuid.uuid      = BLE_UUID_OUR_SENSOR_SERVICE_DATA_STREAM_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
     APP_ERROR_CHECK(err_code);  
@@ -102,7 +108,7 @@ void sensor_service_init(ble_os_t * p_sensor_service)
 
     // FROM_SERVICE_TUTORIAL: Declare 16-bit service and 128-bit base UUIDs and add them to the BLE stack
     ble_uuid_t        service_uuid;
-    ble_uuid128_t     base_uuid = BLE_UUID_SENSOR_SERVICE_BASE_UUID;
+    ble_uuid128_t     base_uuid = BLE_UUID_PRECURE_BACK_BASE_UUID;
     service_uuid.uuid = BLE_UUID_SENSOR_SERVICE_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
     APP_ERROR_CHECK(err_code);    
