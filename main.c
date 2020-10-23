@@ -1,4 +1,9 @@
 /**
+ * Copyright  2020 PreCure ApS
+ *
+ * All Rights Reserved
+ */
+/**
  * Copyright (c) 2014 - 2018, Nordic Semiconductor ASA
  * 
  * All rights reserved.
@@ -37,6 +42,7 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  * 
  */
+
 /** @file
  *
  * @defgroup precure_back_firmware_main main.c
@@ -77,6 +83,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 
+#include "our_service.h"
 #include "sensor_service.h"
 
 
@@ -136,7 +143,8 @@ static uint8_t m_auth_code[] = {'A', 'B', 'C', 'D'}; //0x41, 0x42, 0x43, 0x44
 static int m_auth_code_len = sizeof(m_auth_code);
 #endif
 
-ble_os_t m_sensor_service;
+ble_os_t m_our_service;
+
 // app_timer id variable and define our timer interval and define a timer interval
 APP_TIMER_DEF(m_our_char_timer_id);
 #define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) //1000 ms intervals
@@ -158,7 +166,7 @@ static void timer_timeout_handler(void * p_context)
     if(temperature != previous_temperature)
     {
 	// If new temperature then send notification
-	our_temperature_characteristic_update(&m_sensor_service, &temperature);
+	our_temperature_characteristic_update(&m_our_service, &temperature);
     }
                 
     // Save current temperature until next measurement
@@ -624,7 +632,7 @@ static void services_init(void)
     dis_init();
 
     //FROM_SERVICE_TUTORIAL: Add code to initialize the services used by the application.
-    sensor_service_init(&m_sensor_service);
+    our_service_init(&m_our_service);
 }
 
 
@@ -837,7 +845,7 @@ static void ble_stack_init(void)
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
 
     //OUR_JOB: Step 3.C Set up a BLE event observer to call ble_sensor_service_on_ble_evt() to do housekeeping of ble connections related to sensor service and characteristics.
-    NRF_SDH_BLE_OBSERVER(m_sensor_service_observer, APP_BLE_OBSERVER_PRIO, ble_sensor_service_on_ble_evt, (void*) &m_sensor_service);
+    NRF_SDH_BLE_OBSERVER(m_our_service_observer, APP_BLE_OBSERVER_PRIO, ble_our_service_on_ble_evt, (void*) &m_our_service);
 	
 		
 
