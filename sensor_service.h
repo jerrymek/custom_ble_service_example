@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include "ble.h"
 #include "ble_srv_common.h"
+#include "imu_hw_init.h"
 #include "uuid.h"
 
 /* This structure contains various status information for
@@ -121,8 +122,8 @@ typedef struct
  *          If successful data is returned in the buffer
  *          The function return 0 if successful.
  */
-uint8_t get_sensor_data_from_hw(sensor_id_enum sensor_id,
-				sensor_data_t *buf_t);
+static uint8_t get_sensor_data_from_hw(sensor_id_enum sensor_id,
+				       sensor_data_t *buf_t);
 
 /**
  * @brief Get sensor data from the HW
@@ -134,5 +135,14 @@ uint8_t get_sensor_data_from_hw(sensor_id_enum sensor_id,
 uint8_t send_sensor_data_to_mobile(sensor_id_enum sensor_id,
 				   uint8_t length,
 				   data_stream_packet_t *buf_t);
+
+/**
+ * @brief Initiate the IMU sensor HW
+ * @details Do neccessery register setup and load firmaware that runs
+ *          the Sensor Fusion HW support.
+ *          Setup the GPIO pins.
+ *          The function return 0 if successful.
+ */
+uint8_t initiate_imu_hw(void /* TBD */);
 
 #endif  /* SENSOR_SERVICE_H__ */
