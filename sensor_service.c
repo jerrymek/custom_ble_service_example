@@ -52,8 +52,7 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
-
-#define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
+#include "log_support.h"
 
 // Declaration of a function that will take care of some housekeeping of ble
 // connections related to the Sensor Service and its characteristics.
@@ -71,7 +70,6 @@ void ble_sensor_service_on_ble_evt(ble_evt_t const * p_ble_evt,
         p_sensor_service->conn_handle = BLE_CONN_HANDLE_INVALID;
         break;
     default:
-        // No implementation needed.
         break;
     }
 }
@@ -89,8 +87,7 @@ static uint32_t sensor_char_add(ble_ss_t * p_sensor_service)
     ble_uuid128_t       base_uuid = BLE_UUID_PRECURE_BACK_BASE_UUID;
     char_uuid.uuid      = BLE_UUID_SENSOR_SERVICE_DATA_STREAM_UUID;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &char_uuid.type);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);  
+    MY_ERROR_CHECK(err_code);  
     
     // Add read/write properties to our characteristic
     ble_gatts_char_md_t char_md;
@@ -124,7 +121,7 @@ static uint32_t sensor_char_add(ble_ss_t * p_sensor_service)
     attr_char_value.p_attr_md = &attr_md;
     
     // Set characteristic length in number of bytes
-    attr_char_value.max_len     = 4;
+    attr_char_value.max_len     = 14;
     attr_char_value.init_len    = 4;
     uint8_t value[4]            = {0x12,0x34,0x56,0x78};
     attr_char_value.p_value     = value;
@@ -134,8 +131,7 @@ static uint32_t sensor_char_add(ble_ss_t * p_sensor_service)
 					       &char_md,
 					       &attr_char_value,
 					       &p_sensor_service->char_handles);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
     return NRF_SUCCESS;
 }
 
@@ -156,8 +152,7 @@ void sensor_service_init(ble_ss_t * p_sensor_service)
     service_uuid.uuid = BLE_UUID_SENSOR_SERVICE_UUID;
     service_uuid.type = BLE_UUID_TYPE_VENDOR_BEGIN;
     err_code = sd_ble_uuid_vs_add(&base_uuid, &service_uuid.type);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);    
+    MY_ERROR_CHECK(err_code);    
     
     // Set sensor service connection handle to default value.
     // I.e. an invalid handle since we are not yet in a connection.
@@ -167,10 +162,31 @@ void sensor_service_init(ble_ss_t * p_sensor_service)
     err_code = sd_ble_gatts_service_add(BLE_GATTS_SRVC_TYPE_PRIMARY,
                                         &service_uuid,
                                         &p_sensor_service->service_handle);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
     
     // Call the function sensor_char_add() to add our new characteristic
     // to the service. 
     sensor_char_add(p_sensor_service);
 }
+
+uint32_t data_stream_update(ble_ss_t *p_sensor_service,
+			    uint8_t *buf)
+{
+    uint32_t err_code = 0;
+    if (p_sensor_service->conn_handle != BLE_CONN_HANDLE_INVALID)
+    {
+	ble_gatts_hvx_params_t hvx_params;
+	memset(&hvx_params, 0, sizeof(hvx_params));
+        uint16_t packet_length = buf[1];
+	hvx_params.handle = p_sensor_service->char_handles.value_handle;
+	hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+	hvx_params.offset = 0;
+	hvx_params.p_len  = &packet_length;
+	hvx_params.p_data = buf;
+
+	err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
+    }
+    return err_code;
+}
+
+/* eof */

@@ -163,19 +163,18 @@ void our_service_init(ble_os_t * p_our_service)
 void our_temperature_characteristic_update(ble_os_t *p_our_service, int32_t *temperature_value)
 {
     // OUR_JOB: Step 3.E, Update characteristic value
-		if (p_our_service->conn_handle != BLE_CONN_HANDLE_INVALID)
-		{
-				uint16_t               len = 4;
-				ble_gatts_hvx_params_t hvx_params;
-				memset(&hvx_params, 0, sizeof(hvx_params));
+    if (p_our_service->conn_handle != BLE_CONN_HANDLE_INVALID)
+    {
+	uint16_t               len = 4;
+	ble_gatts_hvx_params_t hvx_params;
+	memset(&hvx_params, 0, sizeof(hvx_params));
 
-				hvx_params.handle = p_our_service->char_handles.value_handle;
-				hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
-				hvx_params.offset = 0;
-				hvx_params.p_len  = &len;
-				hvx_params.p_data = (uint8_t*)temperature_value;  
+	hvx_params.handle = p_our_service->char_handles.value_handle;
+	hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+	hvx_params.offset = 0;
+	hvx_params.p_len  = &len;
+	hvx_params.p_data = (uint8_t*)temperature_value;  
 
-				sd_ble_gatts_hvx(p_our_service->conn_handle, &hvx_params);
-		}
-
+	sd_ble_gatts_hvx(p_our_service->conn_handle, &hvx_params);
+    }
 }

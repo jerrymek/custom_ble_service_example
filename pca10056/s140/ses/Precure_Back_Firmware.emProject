@@ -105,6 +105,7 @@
       <file file_name="../../../sensor_service.h" />
       <file file_name="../../../our_service.c" />
       <file file_name="../../../our_service.h" />
+      <file file_name="../../../log_support.h" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="../../../../../../external/segger_rtt/SEGGER_RTT.c" />

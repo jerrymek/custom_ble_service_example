@@ -82,6 +82,7 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
+#include "log_support.h"
 
 #include "our_service.h"
 #include "sensor_service.h"
@@ -120,8 +121,6 @@
 #define MEM_BUFF_SIZE                   512
 #define DEAD_BEEF                       0xDEADBEEF                              //!< Value used as error code on stack dump, can be used to identify stack location on stack unwind.
 
-#define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
-
 APP_TIMER_DEF(m_sec_req_timer_id);                                              //!< Security request timer. The timer lets us start pairing request if one does not arrive from the Central.
 NRF_BLE_QWR_DEF(m_qwr);                                                         //!< Context for the Queued Write module.
 NRF_BLE_BMS_DEF(m_bms);                                                         //!< Structure used to identify the Bond Management service.
@@ -149,31 +148,48 @@ ble_ss_t m_sensor_service;
 
 // app_timer id variable and define our timer interval and define a timer interval
 APP_TIMER_DEF(m_our_char_timer_id);
+APP_TIMER_DEF(m_sensor_char_timer_id);
 #define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) //1000 ms intervals
+
 // Use UUIDs for service(s) used in your application.
 static void advertising_start(bool erase_bonds);
 
-
 // timer event handler
-static void timer_timeout_handler(void * p_context)
+static void timer_timeout_our_handler(void * p_context)
 {
     // Update temperature and characteristic value.
     int32_t temperature = 0;
     static int32_t previous_temperature=0;
+    uint32_t err_code = 0;
 
     sd_temp_get(&temperature);    //Get temperature
-                
 
     // Check if current temperature is different from last temperature
     if(temperature != previous_temperature)
     {
 	// If new temperature then send notification
-	our_temperature_characteristic_update(&m_our_service, &temperature);
     }
-                
+
     // Save current temperature until next measurement
     previous_temperature = temperature;
+
     nrf_gpio_pin_toggle(LED_4);
+}
+
+static uint8_t buf[] = {0x30, 0xe,
+			0x56, 0x56, 0x56, 0x56,
+			0x56, 0x56, 0x56, 0x56,
+			0x56, 0x56, 0x56, 0x56};
+
+static void timer_timeout_sensor_handler(void * p_context)
+{
+    uint32_t err_code = 0;
+
+    err_code = data_stream_update(&m_sensor_service,
+				  buf);
+    MY_ERROR_CHECK(err_code);
+
+    nrf_gpio_pin_toggle(LED_3);
 }
 
 
@@ -239,9 +255,7 @@ static void delete_bonds(void)
     NRF_LOG_INFO("Erase bonds!");
 
     err_code = pm_peers_delete();
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-}
+    MY_ERROR_CHECK(err_code);}
 
 
 /**@brief Function for starting advertising.
@@ -250,16 +264,15 @@ static void advertising_start(bool erase_bonds)
 {
     if (erase_bonds == true)
     {
-        delete_bonds();
-        // Advertising is started by PM_EVT_PEERS_DELETE_SUCCEEDED event.
+	delete_bonds();
+	// Advertising is started by PM_EVT_PEERS_DELETE_SUCCEEDED event.
     }
     else
     {
-        uint32_t err_code;
+	uint32_t err_code;
 
-        err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-        APP_ERROR_CHECK(err_code);
+	err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
+	MY_ERROR_CHECK(err_code);
     }
 }
 
@@ -277,17 +290,15 @@ static void sec_req_timeout_handler(void * p_context)
 
     if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
     {
-        err_code = pm_conn_sec_status_get(m_conn_handle, &status);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-        APP_ERROR_CHECK(err_code);
+	err_code = pm_conn_sec_status_get(m_conn_handle, &status);
+        MY_ERROR_CHECK(err_code);
 
-        // If the link is still not secured by the peer, initiate security procedure.
-        if (!status.encrypted)
-        {
-            err_code = pm_conn_secure(m_conn_handle, false);
-	    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-            APP_ERROR_CHECK(err_code);
-        }
+	// If the link is still not secured by the peer, initiate security procedure.
+	if (!status.encrypted)
+	{
+	    err_code = pm_conn_secure(m_conn_handle, false);
+	    MY_ERROR_CHECK(err_code);
+	}
     }
 }
 
@@ -336,14 +347,13 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
     {
 	// Run garbage collection on the flash.
 	err_code = fds_gc();
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
 	if (err_code == FDS_ERR_NO_SPACE_IN_QUEUES)
 	{
 	    // Retry.
 	}
 	else
 	{
-	    APP_ERROR_CHECK(err_code);
+	    MY_ERROR_CHECK(err_code);
 	}
     } break;
 
@@ -390,7 +400,7 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
 
 
 /**@brief Function for marking the requester's bond for deletion.
-*/
+ */
 static void delete_requesting_bond(nrf_ble_bms_t const * p_bms)
 {
     NRF_LOG_INFO("Client requested that bond to current device deleted");
@@ -410,25 +420,24 @@ static void bond_delete(uint16_t conn_handle, void * p_context)
 
     if (ble_conn_state_status(conn_handle) == BLE_CONN_STATUS_CONNECTED)
     {
-        ble_conn_state_user_flag_set(conn_handle, m_bms_bonds_to_delete, true);
+	ble_conn_state_user_flag_set(conn_handle, m_bms_bonds_to_delete, true);
     }
     else
     {
-        NRF_LOG_DEBUG("Attempting to delete bond.");
-        err_code = pm_peer_id_get(conn_handle, &peer_id);
-        if (err_code == NRF_SUCCESS)
-        {
-            err_code = pm_peer_delete(peer_id);
-            APP_ERROR_CHECK(err_code);
-	    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-            ble_conn_state_user_flag_set(conn_handle, m_bms_bonds_to_delete, false);
-        }
+	NRF_LOG_DEBUG("Attempting to delete bond.");
+	err_code = pm_peer_id_get(conn_handle, &peer_id);
+	if (err_code == NRF_SUCCESS)
+	{
+	    err_code = pm_peer_delete(peer_id);
+	    MY_ERROR_CHECK(err_code);
+	    ble_conn_state_user_flag_set(conn_handle, m_bms_bonds_to_delete, false);
+	}
     }
 }
 
 
 /**@brief Function for deleting all bonds
-*/
+ */
 static void delete_all_bonds(nrf_ble_bms_t const * p_bms)
 {
     ret_code_t err_code;
@@ -439,13 +448,12 @@ static void delete_all_bonds(nrf_ble_bms_t const * p_bms)
     pm_peer_id_t peer_id = pm_next_peer_id_get(PM_PEER_ID_INVALID);
     while (peer_id != PM_PEER_ID_INVALID)
     {
-        err_code = pm_conn_handle_get(peer_id, &conn_handle);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-        APP_ERROR_CHECK(err_code);
+	err_code = pm_conn_handle_get(peer_id, &conn_handle);
+	MY_ERROR_CHECK(err_code);
 
-        bond_delete(conn_handle, NULL);
+	bond_delete(conn_handle, NULL);
 
-        peer_id = pm_next_peer_id_get(peer_id);
+	peer_id = pm_next_peer_id_get(peer_id);
     }
 }
 
@@ -459,12 +467,11 @@ static void timers_init(void)
 {
     // Initialize timer module.
     ret_code_t err_code = app_timer_init();
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
 
-
-    // OUR_JOB: Step 3.H, Initiate our timer
-    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_handler);
+    // Initiate timer
+    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_our_handler);
+    app_timer_create(&m_sensor_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_sensor_handler);
 
 }
 
@@ -485,9 +492,7 @@ static void gap_params_init(void)
     err_code = sd_ble_gap_device_name_set(&sec_mode,
                                           (const uint8_t *)DEVICE_NAME,
                                           strlen(DEVICE_NAME));
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     memset(&gap_conn_params, 0, sizeof(gap_conn_params));
 
     gap_conn_params.min_conn_interval = MIN_CONN_INTERVAL;
@@ -496,9 +501,7 @@ static void gap_params_init(void)
     gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-}
+    MY_ERROR_CHECK(err_code);}
 
 
 /**@brief Function for initializing the GATT module.
@@ -506,9 +509,7 @@ static void gap_params_init(void)
 static void gatt_init(void)
 {
     ret_code_t err_code = nrf_ble_gatt_init(&m_gatt, NULL);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-}
+    MY_ERROR_CHECK(err_code);}
 
 
 /**@brief Function for handling events from bond management service.
@@ -520,24 +521,23 @@ void bms_evt_handler(nrf_ble_bms_t * p_ess, nrf_ble_bms_evt_t * p_evt)
 
     switch (p_evt->evt_type)
     {
-        case NRF_BLE_BMS_EVT_AUTH:
-            NRF_LOG_DEBUG("Authorization request.");
+    case NRF_BLE_BMS_EVT_AUTH:
+	NRF_LOG_DEBUG("Authorization request.");
 #if USE_AUTHORIZATION_CODE
-            if ((p_evt->auth_code.len != m_auth_code_len) ||
-                (memcmp(m_auth_code, p_evt->auth_code.code, m_auth_code_len) != 0))
-            {
-                is_authorized = false;
-            }
+	if ((p_evt->auth_code.len != m_auth_code_len) ||
+	    (memcmp(m_auth_code, p_evt->auth_code.code, m_auth_code_len) != 0))
+	{
+	    is_authorized = false;
+	}
 #endif
-            err_code = nrf_ble_bms_auth_response(&m_bms, is_authorized);
-	    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-            APP_ERROR_CHECK(err_code);
+	err_code = nrf_ble_bms_auth_response(&m_bms, is_authorized);
+	MY_ERROR_CHECK(err_code);
     }
 }
 
 
 /**@brief Function for deleting all bet requesting device bonds
-*/
+ */
 static void delete_all_except_requesting_bond(nrf_ble_bms_t const * p_bms)
 {
     ret_code_t err_code;
@@ -548,17 +548,16 @@ static void delete_all_except_requesting_bond(nrf_ble_bms_t const * p_bms)
     pm_peer_id_t peer_id = pm_next_peer_id_get(PM_PEER_ID_INVALID);
     while (peer_id != PM_PEER_ID_INVALID)
     {
-        err_code = pm_conn_handle_get(peer_id, &conn_handle);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-        APP_ERROR_CHECK(err_code);
+	err_code = pm_conn_handle_get(peer_id, &conn_handle);
+	MY_ERROR_CHECK(err_code);
 
-        /* Do nothing if this is our own bond. */
-        if (conn_handle != p_bms->conn_handle)
-        {
-            bond_delete(conn_handle, NULL);
-        }
+	/* Do nothing if this is our own bond. */
+	if (conn_handle != p_bms->conn_handle)
+	{
+	    bond_delete(conn_handle, NULL);
+	}
 
-        peer_id = pm_next_peer_id_get(peer_id);
+	peer_id = pm_next_peer_id_get(peer_id);
     }
 }
 
@@ -594,8 +593,7 @@ static void bms_init(void)
     bms_init.bond_callbacks.delete_all_except_requesting = delete_all_except_requesting_bond;
 
     err_code = nrf_ble_bms_init(&m_bms, &bms_init);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
 }
 
 uint16_t qwr_evt_handler(nrf_ble_qwr_t * p_qwr, nrf_ble_qwr_evt_t * p_evt)
@@ -617,8 +615,7 @@ static void qwr_init(void)
     qwr_init.error_handler    = nrf_qwr_error_handler;
 
     err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
 }
 
 /**@brief Initialise the Device Information Service
@@ -634,11 +631,7 @@ static void dis_init(void)
 			  MANUFACTURER_NAME);
 
     err_code = ble_dis_init(&dis_init);
-    if(err_code!=0) NRF_LOG_DEBUG("%s(%d) err_code = 0x%x",
-				  __FILENAME__,
-				  __LINE__,
-				  err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
 }
 
 /**@brief Function for initializing services that will be used by the application.
@@ -673,9 +666,8 @@ static void on_conn_params_evt(ble_conn_params_evt_t * p_evt)
 
     if (p_evt->evt_type == BLE_CONN_PARAMS_EVT_FAILED)
     {
-        err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-        APP_ERROR_CHECK(err_code);
+	err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_CONN_INTERVAL_UNACCEPTABLE);
+	MY_ERROR_CHECK(err_code);
     }
 }
 
@@ -709,8 +701,7 @@ static void conn_params_init(void)
     cp_init.error_handler                  = conn_params_error_handler;
 
     err_code = ble_conn_params_init(&cp_init);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
 }
 
 
@@ -734,18 +725,13 @@ static void sleep_mode_enter(void)
     ret_code_t err_code;
 
     err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     // Prepare wakeup buttons.
     err_code = bsp_btn_ble_sleep_mode_prepare();
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
     err_code = sd_power_system_off();
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
 }
 
 
@@ -764,8 +750,7 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
     case BLE_ADV_EVT_FAST:
 	NRF_LOG_INFO("Fast advertising.");
 	err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-	APP_ERROR_CHECK(err_code);
+	MY_ERROR_CHECK(err_code);
 	break;
 
     case BLE_ADV_EVT_IDLE:
@@ -800,28 +785,26 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
     case BLE_GAP_EVT_CONNECTED:
 	NRF_LOG_INFO("Connected.");
 	err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-	APP_ERROR_CHECK(err_code);
+	MY_ERROR_CHECK(err_code);
 	m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
 	err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-	APP_ERROR_CHECK(err_code);
+	MY_ERROR_CHECK(err_code);
 
 	//When connected; start our timer to start regular temperature measurements
 	app_timer_start(m_our_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
+	app_timer_start(m_sensor_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
 	break;
 
     case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
     {
 	NRF_LOG_DEBUG("PHY update request.");
 	ble_gap_phys_t const phys =
-            {
-                .rx_phys = BLE_GAP_PHY_AUTO,
-                .tx_phys = BLE_GAP_PHY_AUTO,
-            };
+	    {
+		.rx_phys = BLE_GAP_PHY_AUTO,
+		.tx_phys = BLE_GAP_PHY_AUTO,
+	    };
 	err_code = sd_ble_gap_phy_update(p_ble_evt->evt.gap_evt.conn_handle, &phys);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-	APP_ERROR_CHECK(err_code);
+	MY_ERROR_CHECK(err_code);
     } break;
 
     case BLE_GATTC_EVT_TIMEOUT:
@@ -829,8 +812,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	NRF_LOG_DEBUG("GATT Client Timeout.");
 	err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gattc_evt.conn_handle,
 					 BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-	APP_ERROR_CHECK(err_code);
+	MY_ERROR_CHECK(err_code);
 	break;
 
     case BLE_GATTS_EVT_TIMEOUT:
@@ -838,8 +820,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	NRF_LOG_DEBUG("GATT Server Timeout.");
 	err_code = sd_ble_gap_disconnect(p_ble_evt->evt.gatts_evt.conn_handle,
 					 BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-	APP_ERROR_CHECK(err_code);
+	MY_ERROR_CHECK(err_code);
 	break;
 
     default:
@@ -860,21 +841,15 @@ static void ble_stack_init(void)
     ret_code_t err_code;
 
     err_code = nrf_sdh_enable_request();
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     // Configure the BLE stack using the default settings.
     // Fetch the start address of the application RAM.
     uint32_t ram_start = 0;
     err_code = nrf_sdh_ble_default_cfg_set(APP_BLE_CONN_CFG_TAG, &ram_start);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     // Enable BLE stack.
     err_code = nrf_sdh_ble_enable(&ram_start);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     // Register a handler for BLE events.
     NRF_SDH_BLE_OBSERVER(m_ble_observer, APP_BLE_OBSERVER_PRIO, ble_evt_handler, NULL);
 
@@ -883,9 +858,6 @@ static void ble_stack_init(void)
 	
     // Set up a BLE event observer to call ble_sensor_service_on_ble_evt() to do housekeeping of ble connections related to sensor service and characteristics.
     NRF_SDH_BLE_OBSERVER(m_sensor_service_observer, APP_BLE_OBSERVER_PRIO, ble_sensor_service_on_ble_evt, (void*) &m_sensor_service);
-		
-
-	
 }
 
 
@@ -897,9 +869,7 @@ static void peer_manager_init(void)
     ret_code_t           err_code;
 
     err_code = pm_init();
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     memset(&sec_param, 0, sizeof(ble_gap_sec_params_t));
 
     // Security parameters to be used for all security procedures.
@@ -917,12 +887,9 @@ static void peer_manager_init(void)
     sec_param.kdist_peer.id  = 1;
 
     err_code = pm_sec_params_set(&sec_param);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
-//    err_code = pm_register(pm_evt_handler);
-//    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-//    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(err_code);
+    err_code = pm_register(pm_evt_handler);
+    MY_ERROR_CHECK(err_code);
 }
 
 
@@ -943,10 +910,9 @@ static void bsp_event_handler(bsp_event_t event)
     case BSP_EVENT_DISCONNECT:
 	err_code = sd_ble_gap_disconnect(m_conn_handle,
 					 BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
-	NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
 	if (err_code != NRF_ERROR_INVALID_STATE)
 	{
-	    APP_ERROR_CHECK(err_code);
+	    MY_ERROR_CHECK(err_code);
 	}
 	break; // BSP_EVENT_DISCONNECT
 
@@ -954,10 +920,9 @@ static void bsp_event_handler(bsp_event_t event)
 	if (m_conn_handle == BLE_CONN_HANDLE_INVALID)
 	{
 	    err_code = ble_advertising_restart_without_whitelist(&m_advertising);
-	    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
 	    if (err_code != NRF_ERROR_INVALID_STATE)
 	    {
-		APP_ERROR_CHECK(err_code);
+		MY_ERROR_CHECK(err_code);
 	    }
 	}
 	break; // BSP_EVENT_KEY_0
@@ -993,9 +958,7 @@ static void advertising_init(void)
     init.evt_handler = on_adv_evt;
 
     err_code = ble_advertising_init(&m_advertising, &init);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);
 }
 
@@ -1010,13 +973,9 @@ static void buttons_leds_init(bool * p_erase_bonds)
     bsp_event_t startup_event;
 
     err_code = bsp_init(BSP_INIT_LEDS | BSP_INIT_BUTTONS, bsp_event_handler);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     err_code = bsp_btn_ble_init(NULL, &startup_event);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     *p_erase_bonds = (startup_event == BSP_EVENT_CLEAR_BONDING_DATA);
 }
 
@@ -1026,9 +985,7 @@ static void buttons_leds_init(bool * p_erase_bonds)
 static void log_init(void)
 {
     ret_code_t err_code = NRF_LOG_INIT(NULL);
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
-
+    MY_ERROR_CHECK(err_code);
     NRF_LOG_DEFAULT_BACKENDS_INIT();
 }
 
@@ -1037,10 +994,7 @@ static void log_init(void)
  */
 static void power_management_init(void)
 {
-    ret_code_t err_code;
-    err_code = nrf_pwr_mgmt_init();
-    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, err_code)
-    APP_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(nrf_pwr_mgmt_init());
 }
 
 
@@ -1052,7 +1006,7 @@ static void idle_state_handle(void)
 {
     if (NRF_LOG_PROCESS() == false)
     {
-        nrf_pwr_mgmt_run();
+	nrf_pwr_mgmt_run();
     }
 }
 
@@ -1085,7 +1039,7 @@ int main(void)
     // Enter main loop.
     for (;;)
     {
-        idle_state_handle();
+	idle_state_handle();
     }
 }
 
