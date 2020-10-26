@@ -103,7 +103,7 @@ typedef struct
  * @brief Pointer to buffer with sensor data
  * @details The buffer can be of the types
  */
-uint8_t *buf_p;
+//uint8_t *buf_p;
 
 /**
  * @brief Get sensor data

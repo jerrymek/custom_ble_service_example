@@ -176,20 +176,35 @@ static void timer_timeout_our_handler(void * p_context)
     nrf_gpio_pin_toggle(LED_4);
 }
 
-static uint8_t buf[] = {0x30, 0xe,
-			0x56, 0x56, 0x56, 0x56,
-			0x56, 0x56, 0x56, 0x56,
-			0x56, 0x56, 0x56, 0x56};
+static uint8_t imu_buf[] = {0x30, 0xe,
+			    0x56, 0x56, 0x56, 0x56,
+			    0x56, 0x56, 0x56, 0x56,
+			    0x56, 0x56, 0x56, 0x56};
+
+static uint8_t emg_buf[] = {0x10, 0x12,
+			    0x65, 0x65, 0x65, 0x65,
+			    0x65, 0x65, 0x65, 0x65,
+			    0x65, 0x65, 0x65, 0x65,
+			    0x65, 0x65, 0x65, 0x65};
 
 static void timer_timeout_sensor_handler(void * p_context)
 {
     uint32_t err_code = 0;
-
-    err_code = data_stream_update(&m_sensor_service,
-				  buf);
+    static uint8_t buf_index;
+    if (buf_index %2 == 0)
+    {
+	nrf_gpio_pin_toggle(LED_3);
+	err_code = data_stream_update(&m_sensor_service,
+				      imu_buf);
+    }
+    else
+    {
+	nrf_gpio_pin_toggle(LED_4);
+	err_code = data_stream_update(&m_sensor_service,
+				      emg_buf);
+    }
     MY_ERROR_CHECK(err_code);
-
-    nrf_gpio_pin_toggle(LED_3);
+    buf_index++;
 }
 
 

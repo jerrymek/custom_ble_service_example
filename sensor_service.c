@@ -121,9 +121,9 @@ static uint32_t sensor_char_add(ble_ss_t * p_sensor_service)
     attr_char_value.p_attr_md = &attr_md;
     
     // Set characteristic length in number of bytes
-    attr_char_value.max_len     = 14;
-    attr_char_value.init_len    = 4;
-    uint8_t value[4]            = {0x12,0x34,0x56,0x78};
+    attr_char_value.max_len     = 0x12;
+    attr_char_value.init_len    = 2;
+    uint8_t value[4]            = {0x30, 2};
     attr_char_value.p_value     = value;
 
     // Add our new characteristic to the service
