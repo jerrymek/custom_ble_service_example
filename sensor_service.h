@@ -77,38 +77,42 @@ typedef struct
 /**
  * @brief Format of sensor data sent as part of the data stream packet
  * @detail The sensor data has the same structure: x, y and z of the
- *         type float for all sensor types accelerometer, magnetometer
- *         and gyroscope.
- */
-typedef struct
-{
-    uint32_t x_axis;
-    uint32_t y_axis;
-    uint32_t z_axis;
-} sensor_data_t;
-
-/**
- * @brief Format of euler angle data of sent as part of the data stream
- * @detail  packet .The sensor data has the same structure: x, y and z
- *         of the type float for all sensor types accelerometer,
+ *         type float for all IMU sensor types accelerometer,
  *         magnetometer and gyroscope.
  */
 typedef struct
 {
-    uint8_t sensor_id;
-    uint32_t alpha;
-    uint32_t beta;
-    uint32_t gamma;
-} sensor_euler_t;
+    float x_axis;
+    float y_axis;
+    float z_axis;
+} imu_data_t;
 
 /**
- * @brief Get sensor data from the HW
+ * @brief Format of euler angle data of sent as part of the data stream
+ * @detail The sensor data has the structure: alpha, beta and gamma, and
+ *         have the type float.
+ */
+typedef struct
+{
+    float alpha;
+    float beta;
+    float gamma;
+} euler_angels_t;
+
+/**
+ * @brief Pointer to buffer with sensor data
+ * @details The buffer can be of the types
+ */
+uint8_t *buf_p;
+
+/**
+ * @brief Get sensor data
  * @details Get sensor data from the sensor specified by sensor_id_enum.
  *          If successful data is returned in the buffer
  *          The function return 0 if successful.
  */
-static uint8_t get_sensor_data_from_hw(uint8_t sensor_id,
-				       uint8_t *buf_t);
+static uint8_t get_sensor_data(uint8_t sensor_id,
+			       uint8_t *buf_p);
 
 /**
  * @brief Get sensor data from the HW
