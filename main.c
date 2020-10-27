@@ -191,7 +191,7 @@ static void timer_timeout_sensor_handler(void * p_context)
 {
     uint32_t err_code = 0;
     static uint8_t buf_index;
-    if (buf_index %2 == 0)
+    if (buf_index % 2 == 0)
     {
 	nrf_gpio_pin_toggle(LED_3);
 	err_code = data_stream_update(&m_sensor_service,
@@ -203,7 +203,7 @@ static void timer_timeout_sensor_handler(void * p_context)
 	err_code = data_stream_update(&m_sensor_service,
 				      emg_buf);
     }
-    MY_ERROR_CHECK(err_code);
+//    MY_ERROR_CHECK(err_code);
     buf_index++;
 }
 
