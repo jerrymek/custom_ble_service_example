@@ -524,7 +524,8 @@ static void gap_params_init(void)
 static void gatt_init(void)
 {
     ret_code_t err_code = nrf_ble_gatt_init(&m_gatt, NULL);
-    MY_ERROR_CHECK(err_code);}
+    MY_ERROR_CHECK(err_code);
+}
 
 
 /**@brief Function for handling events from bond management service.
@@ -624,9 +625,9 @@ static void qwr_init(void)
     nrf_ble_qwr_init_t   qwr_init;
 
     memset(&qwr_init, 0, sizeof(qwr_init));
-//    qwr_init.mem_buffer.len   = MEM_BUFF_SIZE;
-//    qwr_init.mem_buffer.p_mem = m_qwr_mem;
-//    qwr_init.callback         = qwr_evt_handler;
+    qwr_init.mem_buffer.len   = MEM_BUFF_SIZE;
+    qwr_init.mem_buffer.p_mem = m_qwr_mem;
+    qwr_init.callback         = qwr_evt_handler;
     qwr_init.error_handler    = nrf_qwr_error_handler;
 
     err_code = nrf_ble_qwr_init(&m_qwr, &qwr_init);
