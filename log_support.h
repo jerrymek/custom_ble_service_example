@@ -9,4 +9,9 @@
     APP_ERROR_CHECK(x);\
     }
 
+#define MY_ERROR_LOG(x) \
+    if(x!=0) {\
+    NRF_LOG_DEBUG("%s(%d) err_code = 0x%x", __FILENAME__, __LINE__, x);\
+    }
+
 #endif
