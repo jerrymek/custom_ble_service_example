@@ -66,6 +66,7 @@
 #include "nrf_sdh.h"
 #include "nrf_sdh_soc.h"
 #include "nrf_sdh_ble.h"
+#include "nrf_delay.h"
 #include "app_timer.h"
 #include "peer_manager.h"
 #include "bsp_btn_ble.h"
@@ -86,7 +87,8 @@
 
 #include "our_service.h"
 #include "sensor_service.h"
-
+#include "nrf_drv_spi.h"
+#include "ads1298_drv.h"
 
 #define DEVICE_NAME                     "Precure Back Core Unit"                /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "Precure A/S"                           /**< Manufacturer. Will be passed to Device Information Service. */
@@ -120,6 +122,11 @@
 
 #define MEM_BUFF_SIZE                   512
 #define DEAD_BEEF                       0xDEADBEEF                              //!< Value used as error code on stack dump, can be used to identify stack location on stack unwind.
+#define SPI_INSTANCE 0
+
+static const nrf_drv_spi_t spi = NRF_DRV_SPI_INSTANCE(SPI_INSTANCE);            //!< SPI instance. */
+static volatile bool spi_xfer_done;                                             //!< Flag used to indicate that SPI instance completed the transfer. */
+
 
 APP_TIMER_DEF(m_sec_req_timer_id);                                              //!< Security request timer. The timer lets us start pairing request if one does not arrive from the Central.
 NRF_BLE_QWR_DEF(m_qwr);                                                         //!< Context for the Queued Write module.
@@ -1032,6 +1039,7 @@ static void idle_state_handle(void)
  */
 int main(void)
 {
+    ret_code_t err_code;
     bool erase_bonds;
 
     // Initialize.
@@ -1047,8 +1055,16 @@ int main(void)
     conn_params_init();
     peer_manager_init();
 
+    bsp_board_init(BSP_INIT_LEDS);
+    (void)ads_init_spi();
+    err_code = NRF_LOG_INIT(NULL);
+    MY_ERROR_CHECK(err_code);
+//    NRF_LOG_DEFAULT_BACKENDS_INIT();
+
     // Start execution.
     NRF_LOG_INFO("Precure Back Firmware started.");
+    NRF_LOG_INFO("SPI example started.");
+
     application_timers_start();
 
     advertising_start(erase_bonds);
@@ -1057,6 +1073,11 @@ int main(void)
     for (;;)
     {
 	idle_state_handle();
+
+	(void)ads_hello_world();
+
+        bsp_board_led_invert(BSP_BOARD_LED_0);
+        nrf_delay_ms(2000);
     }
 }
 
