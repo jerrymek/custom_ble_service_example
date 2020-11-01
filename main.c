@@ -79,6 +79,7 @@
 #include "nrf_ble_bms.h"
 #include "nrf_ble_gatt.h"
 #include "nrf_pwr_mgmt.h"
+#include "nrf_gpio.h"
 
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
@@ -754,7 +755,7 @@ static void sleep_mode_enter(void)
     err_code = bsp_btn_ble_sleep_mode_prepare();
     MY_ERROR_CHECK(err_code);
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
-    err_code = sd_power_system_off();
+// Todo:    err_code = sd_power_system_off();
     MY_ERROR_CHECK(err_code);
 }
 
@@ -1059,9 +1060,7 @@ int main(void)
     (void)ads_init_spi();
     err_code = NRF_LOG_INIT(NULL);
     MY_ERROR_CHECK(err_code);
-//    NRF_LOG_DEFAULT_BACKENDS_INIT();
 
-    // Start execution.
     NRF_LOG_INFO("Precure Back Firmware started.");
     NRF_LOG_INFO("SPI example started.");
 
@@ -1069,15 +1068,14 @@ int main(void)
 
     advertising_start(erase_bonds);
 
-    // Enter main loop.
+    (void)ads_hello_world();
+   
     for (;;)
     {
 	idle_state_handle();
 
-	(void)ads_hello_world();
-
         bsp_board_led_invert(BSP_BOARD_LED_0);
-        nrf_delay_ms(2000);
+        nrf_delay_ms(2);
     }
 }
 
