@@ -95,7 +95,7 @@ void spi_event_handler(nrf_drv_spi_evt_t const * p_event,
                        void *                    p_context)
 {
     spi_xfer_done = true;
-    NRF_LOG_INFO("Transfer completed.");
+    NRF_LOG_DEBUG("%s(%d) Transfer completed.", __FILENAME__, __LINE__);
     if (m_rx_buf[0] != 0)
     {
         NRF_LOG_INFO(" Received:");
@@ -117,46 +117,87 @@ ads_rc_e ads_init_spi(void)
 
     // Ensure less than 4 clk cycles for ADS1292/8}
     spi_config.frequency = NRF_DRV_SPI_FREQ_500K; // Ensure less than 4 clk cycles for ADS1292/8}
-    spi_config.ss_pin = NRF_DRV_SPI_PIN_NOT_USED; // Manual control of the CS pin, set the pin to not used.
+    spi_config.ss_pin = NRF_DRV_SPI_PIN_NOT_USED; // Manual control of the CS pin, set the Slave Select pin to not used.
     spi_config.miso_pin = SPI_MISO_PIN;
     spi_config.mosi_pin = SPI_MOSI_PIN;
     spi_config.sck_pin  = SPI_SCK_PIN;
     err_code = nrf_drv_spi_init(&spi, &spi_config, spi_event_handler, NULL);
     MY_ERROR_CHECK(err_code);
-    return rc;
+
+    nrf_gpio_cfg_output(SPI_SS_PIN);
+
+    return err_code;
 }
 
 ads_rc_e ads_hello_world(void)
 {
     ads_rc_e rc = ADS_RESULT_NOT_OK;
     ret_code_t err_code = 0; // Todo: no code for initiating err_code to unsuccessful.
-
+ 
     /*
      * Stop the continuos read mode to allow use of RREG.
      */
     uint8_t cmd = ADS_SDATAC;
+    // Reset rx buffer and transfer done flag
+    spi_xfer_done = false;
+    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    nrf_gpio_pin_clear(SPI_SS_PIN);
     err_code = nrf_drv_spi_transfer(&spi, &cmd, 1, NULL, 0);
+    while (!spi_xfer_done)
+    {
+        __WFE();
+    }
+    spi_xfer_done = false;
+    nrf_gpio_pin_set(SPI_SS_PIN);
     MY_ERROR_CHECK(err_code);
 
     /*
      * Stop the ADC conversion.
      */
-    cmd = ADS_STOP;
-    err_code = nrf_drv_spi_transfer(&spi, &cmd, 1, NULL, 0);
-    MY_ERROR_LOG(err_code);
+    //cmd = ADS_STOP;
+    //nrf_gpio_pin_clear(SPI_SS_PIN);
+    //err_code = nrf_drv_spi_transfer(&spi, &cmd, 1, NULL, 0);
+    //nrf_gpio_pin_set(SPI_SS_PIN);
+    //MY_ERROR_LOG(err_code);
 
     /*
      * Send command to read the HW ID from the ADS chip.
      */
+    uint8_t rx_buf[64] = {0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0,
+                          0,0,0,0,0,0,0,0};
     uint8_t buf[2] = {ADS_RREG, 0};
-    err_code = nrf_drv_spi_transfer(&spi, buf, 2, NULL, 0);
+    NRF_LOG_DEBUG("%s(%d) ADS_RREG.", __FILENAME__, __LINE__);
+    nrf_gpio_pin_clear(SPI_SS_PIN);
+    err_code = nrf_drv_spi_transfer(&spi, buf, 2, rx_buf, 64);
+    while (!spi_xfer_done)
+    {
+        __WFE();
+    }
+    spi_xfer_done = false;
+    nrf_gpio_pin_set(SPI_SS_PIN);
+    NRF_LOG_DEBUG("%s(%d) rx_buf[0] = 0x%x", __FILENAME__, __LINE__, rx_buf);
     MY_ERROR_CHECK(err_code);
+
 
     /*
      * Read data returned from ADS.
      */
     //uint8_t *rx_buf;
-    //err_code = nrf_drv_spi_transfer(&spi, NULL, 1, rx_buf, 1);
+    //memset(rx_buf, 0, 1);
+    //nrf_gpio_pin_clear(SPI_SS_PIN);
+    //err_code = nrf_drv_spi_transfer(&spi, NULL, 0, rx_buf, 1);
+    //while (!spi_xfer_done)
+    //{
+    //    __WFE();
+    //}
+    //spi_xfer_done = false;
+    //nrf_gpio_pin_set(SPI_SS_PIN);
     //NRF_LOG_DEBUG("%s(%d) rx_buf[0] = 0x%x", __FILENAME__, __LINE__, rx_buf);
     //MY_ERROR_CHECK(err_code);
     return rc;
