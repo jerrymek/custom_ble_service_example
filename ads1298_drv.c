@@ -88,6 +88,7 @@
 #define PIN_LOW     (0x0)
 #define PIN_HIGH    (0x1)
 
+#define NUMBER_OF_CHANNELS (8)// - 1)
 #define REC_BUF_LEN 27        // status 3 bytes + (8 channels * 3 bytes)
 uint8_t rx_buf[REC_BUF_LEN] = {0,0,0,0,0,0,0,0,
 			       0,0,0,0,0,0,0,0,
@@ -279,19 +280,33 @@ ret_code_t ads_hello_world(void)
     err_code = ads_send_command(&cmd, 1, NULL, 0);
     MY_ERROR_CHECK(err_code);
 
-    tx_reg[0] = (ADS_RREG << 5 | (LOFF_SENSP & 0x1f));
-    tx_reg[1] = 8;
-    NRF_LOG_DEBUG("%s(%d) RREG LOFF_SENSP.", __FILENAME__, __LINE__);
+    tx_reg[0] = (ADS_RREG << 5 | (RLD_SENSP & 0x1f));
+    tx_reg[1] = NUMBER_OF_CHANNELS;
+    NRF_LOG_DEBUG("%s(%d) RREG RLD_SENSP.", __FILENAME__, __LINE__);
     err_code = ads_send_command(tx_reg, 3, rx_buf, REC_BUF_LEN);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[2], rx_buf[1], rx_buf[0]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[5], rx_buf[4], rx_buf[3]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[8], rx_buf[7], rx_buf[6]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[11], rx_buf[10], rx_buf[9]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[14], rx_buf[13], rx_buf[12]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[17], rx_buf[16], rx_buf[15]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[20], rx_buf[19], rx_buf[18]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[23], rx_buf[22], rx_buf[21]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[26], rx_buf[25], rx_buf[24]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[9], rx_buf[10], rx_buf[11]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[12], rx_buf[13], rx_buf[14]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[15], rx_buf[16], rx_buf[17]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[18], rx_buf[19], rx_buf[20]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]);
+
+    tx_reg[0] = (ADS_RREG << 5 | (RLD_SENSN & 0x1f));
+    tx_reg[1] = NUMBER_OF_CHANNELS;
+    NRF_LOG_DEBUG("%s(%d) RREG RLD_SENSN.", __FILENAME__, __LINE__);
+    err_code = ads_send_command(tx_reg, 3, rx_buf, REC_BUF_LEN);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[9], rx_buf[10], rx_buf[11]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[12], rx_buf[13], rx_buf[14]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[15], rx_buf[16], rx_buf[17]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[18], rx_buf[19], rx_buf[20]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]);
 
     NRF_LOG_DEBUG("End of Hello World");
 
