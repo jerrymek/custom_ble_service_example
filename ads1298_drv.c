@@ -269,23 +269,31 @@ ret_code_t ads_hello_world(void)
     cmd = ADS_RDATAC;
     NRF_LOG_DEBUG("%s(%d) RDATAC.", __FILENAME__, __LINE__);
     err_code = ads_send_command(&cmd, 1, NULL, 0);
-    // and issue the START command.
-    cmd = ADS_START;
-    NRF_LOG_DEBUG("%s(%d) START.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&cmd, 1, NULL, 0);
 
     // Capture Data and Check Noise
     // Look for !DRDY and Issue 24 + n * 24 SCLKs Todo: What does n mean?
     while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
+
+    // SDATAC Command so Registers can be Written
+    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    err_code = ads_send_command(&cmd, 1, NULL, 0);
+    MY_ERROR_CHECK(err_code);
+
     tx_reg[0] = (ADS_RREG << 5 | (LOFF_SENSP & 0x1f));
     tx_reg[1] = 8;
     NRF_LOG_DEBUG("%s(%d) RREG LOFF_SENSP.", __FILENAME__, __LINE__);
     err_code = ads_send_command(tx_reg, 3, rx_buf, REC_BUF_LEN);
-    for (int i = 0; i < REC_BUF_LEN; i++)
-    {
-	NRF_LOG_DEBUG("0x%x", rx_buf[i]);
-    }
-    NRF_LOG_DEBUG("rx_buf = \"%s\"", rx_buf);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[2], rx_buf[1], rx_buf[0]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[5], rx_buf[4], rx_buf[3]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[8], rx_buf[7], rx_buf[6]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[11], rx_buf[10], rx_buf[9]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[14], rx_buf[13], rx_buf[12]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[17], rx_buf[16], rx_buf[15]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[20], rx_buf[19], rx_buf[18]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[23], rx_buf[22], rx_buf[21]);
+    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[26], rx_buf[25], rx_buf[24]);
+
     NRF_LOG_DEBUG("End of Hello World");
+
     return err_code;
 }
