@@ -1062,20 +1062,20 @@ int main(void)
     MY_ERROR_CHECK(err_code);
 
     NRF_LOG_INFO("Precure Back Firmware started.");
-    NRF_LOG_INFO("SPI example started.");
 
     application_timers_start();
 
     advertising_start(erase_bonds);
 
+//    (void)ads_read_ID();
     (void)ads_hello_world();
    
     for (;;)
     {
 	idle_state_handle();
 
-        bsp_board_led_invert(BSP_BOARD_LED_0);
-        nrf_delay_ms(2);
+        /* bsp_board_led_invert(BSP_BOARD_LED_0); */
+	nrf_gpio_pin_toggle(SPI_SS_PIN);     // SPI chip select; active low
     }
 }
 

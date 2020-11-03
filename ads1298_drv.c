@@ -29,7 +29,7 @@
 /**
  * @brief Register Map
  */
-#define ADS_REG_ID 0x0
+#define ADS_ID     0x0
 #define CONFIG1    0x1 // 06 HR DAISY_EN CLK_EN 0 0 DR2 DR1 DR0
 #define CONFIG2    0x2 // 40 0 0 WCT_CHOP INT_TEST 0 TEST_AMP TEST_FREQ1 TEST_FREQ0 RLD_LOFF_
 #define CONFIG3    0x3 // 40 PD_REFBUF 1 VREF_4V RLD_MEAS RLDREF_INT PD_RLD RLD_STAT SENS
@@ -62,18 +62,18 @@
 /**
  * SYSTEM COMMANDS
  */
-#define ADS_WAKEUP  (0x02) // Wakeup from standby mode
-#define ADS_STANDBY (0x04) // Enter standby mode
-#define ADS_RESET   (0x06) // Reset the device
-#define ADS_START   (0x08) // Start/restart (synchronize) conversions
-#define ADS_STOP    (0x0a) // Stop conversion
+uint8_t ADS_WAKEUP  = (0x02); // Wakeup from standby mode
+uint8_t ADS_STANDBY = (0x04); // Enter standby mode
+uint8_t ADS_RESET   = (0x06); // Reset the device
+uint8_t ADS_START   = (0x08); // Start/restart (synchronize) conversions
+uint8_t ADS_STOP    = (0x0a); // Stop conversion
 
 /**
  * DATA READ COMMANDS
  */
-#define ADS_RDATAC  (0x10) // Enable Read Data Continuous mode (default at power up).
-#define ADS_SDATAC  (0x11) // Stop Read Data Continuously mode.
-#define ADS_RDATA   (0x12) // Read data by command. supports multiple read back.
+uint8_t ADS_RDATAC  = (0x10); // Enable Read Data Continuous mode (default at power up).
+uint8_t ADS_SDATAC  = (0x11); // Stop Read Data Continuously mode.
+uint8_t ADS_RDATA   = (0x12); // Read data by command. supports multiple read back.
 
 /**
  * REGISTER READ COMMANDS
@@ -88,12 +88,17 @@
 #define PIN_LOW     (0x0)
 #define PIN_HIGH    (0x1)
 
-#define NUMBER_OF_CHANNELS (8)// - 1)
-#define REC_BUF_LEN 27        // status 3 bytes + (8 channels * 3 bytes)
-uint8_t rx_buf[REC_BUF_LEN] = {0,0,0,0,0,0,0,0,
-			       0,0,0,0,0,0,0,0,
-			       0,0,0,0,0,0,0,0,
-			       0,0,0};
+#define NUMBER_OF_CHANNELS (8)
+#define REC_BUF_LEN 27     // status 3 bytes + (8 channels * 3 bytes)
+uint8_t rx_buf[REC_BUF_LEN] = { 0, 0, 0,
+				0, 0, 0,
+				0, 0, 0,
+				0, 0, 0,
+				0, 0, 0,
+				0, 0, 0,
+				0, 0, 0,
+				0, 0, 0,
+			        0, 0, 0};
 
 //!< SPI instance index.
 #define SPI_INSTANCE (0)
@@ -129,7 +134,7 @@ void spi_event_handler(nrf_drv_spi_evt_t const * p_event,
                        void *                    p_context)
 {
     spi_xfer_done = true;
-    NRF_LOG_DEBUG("%s(%d) Transfer completed.", __FILENAME__, __LINE__);
+//    NRF_LOG_DEBUG("%s(%d) Transfer completed.", __FILENAME__, __LINE__);
 }
 
 #define GENERAL_FAILURE 0xffff  // Todo: no code for initiating err_code to unsuccessful.
@@ -137,18 +142,11 @@ ret_code_t ads_send_command(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, ui
 {
     ret_code_t err_code = GENERAL_FAILURE;
     spi_xfer_done = false;
-    nrf_gpio_pin_clear(SPI_SS_PIN);
-    if ( rx_len > 0 )
-    {
-	while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
-    }
     err_code = nrf_drv_spi_transfer(&spi, tx_buf, tx_len, rx_buf, rx_len);
     while (!spi_xfer_done)
     {
         __WFE();
     }
-
-    nrf_gpio_pin_set(SPI_SS_PIN);
     MY_ERROR_CHECK(err_code);
     return err_code;
 }
@@ -162,42 +160,120 @@ ret_code_t ads_init_spi(void)
 {
     ret_code_t err_code = GENERAL_FAILURE;
     nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DEFAULT_CONFIG;
+ 
+    nrf_gpio_cfg_output(SPI_SS_PIN);                       // Configure Slave Select pin.
+    nrf_gpio_cfg_input(SPI_DRDY_PIN, NRF_GPIO_PIN_PULLUP); // Configure Data Ready pin.
+    nrf_gpio_cfg_output(ADS_RESET_PIN);                    // Configure ADS Reset Pin.
 
-    spi_config.frequency = NRF_DRV_SPI_FREQ_500K; // Ensure less than 4 clk cycles for ADS1292/8}
+    nrf_gpio_pin_set(ADS_RESET_PIN);    // 2) Set the RESET pin high
+    nrf_delay_ms(100);                  // 3) Wait after powerup until reset
+    nrf_gpio_pin_clear(ADS_RESET_PIN);  // 4) Set RESET pin low for a minimum of 2 * tCLK
+    nrf_delay_ms(10);                   // 5) wait > 2 * tCLK
+    nrf_gpio_pin_set(ADS_RESET_PIN);    // 6) Setting RESET pin high now enables the digital portion of the ADS1298
+    nrf_delay_ms(2500);                 // 7) Wait > 18 * tCLK Before starting to use the device
+    NRF_LOG_DEBUG("%s(%d) Reset of ADS1298 done.",
+		  __FILENAME__, __LINE__);
+
     spi_config.ss_pin = NRF_DRV_SPI_PIN_NOT_USED; // Manual control of the CS pin, set the Slave Select pin to not used.
     spi_config.miso_pin = SPI_MISO_PIN;
     spi_config.mosi_pin = SPI_MOSI_PIN;
     spi_config.sck_pin  = SPI_SCK_PIN;
+    spi_config.frequency = NRF_DRV_SPI_FREQ_500K; // Ensure less than 4 clk cycles for ADS1292/8}
+    spi_config.bit_order = NRF_DRV_SPI_BIT_ORDER_MSB_FIRST;
+    spi_config.mode      = NRF_DRV_SPI_MODE_1;
     err_code = nrf_drv_spi_init(&spi, &spi_config, spi_event_handler, NULL);
     MY_ERROR_CHECK(err_code);
 
-    nrf_gpio_cfg_output(SPI_SS_PIN);                       // Configure Slave Select pin.
-    nrf_gpio_cfg_input(SPI_DRDY_PIN, NRF_GPIO_PIN_PULLUP); // Configure Data Ready pin.
+    return err_code;
+}
+
+ret_code_t ads_read_ID(void)
+{
+    ret_code_t err_code = GENERAL_FAILURE;
+    uint8_t tx_buf[3] = { 0, 0, 0 };
+
+    nrf_gpio_pin_clear(SPI_SS_PIN);     // SPI chip select; active low
+    nrf_delay_ms(1);
+
+    // Send SDATAC Command so Registers can be Written
+    MY_ERROR_CHECK(ads_send_command(&ADS_SDATAC, 1, NULL, 0));
+    
+    // WREG CONFIG1
+    tx_buf[0] = ((ADS_WREG & 0x7) << 5 | (CONFIG1 & 0x1f));
+    tx_buf[1] = 0;
+    tx_buf[2] = 0x80;
+    NRF_LOG_DEBUG("%s(%d) 0x%x 0x%x 0x%x",
+    		  __FILENAME__, __LINE__,
+    		  tx_buf[0], tx_buf[1], tx_buf[2]);
+    err_code = ads_send_command(tx_buf, 3, NULL, 0);
+    MY_ERROR_CHECK(err_code);
+
+    tx_buf[0] = (ADS_RREG << 5 | (ADS_ID & 0x1f));
+    tx_buf[1] = 0;
+    tx_buf[2] = 0;
+    uint8_t idcode = 0;
+    uint8_t idlen = 1;
+    NRF_LOG_DEBUG("%s(%d) 0x%x 0x%x 0x%x",
+		  __FILENAME__, __LINE__,
+		  tx_buf[0], tx_buf[1], tx_buf[2]);
+    err_code = ads_send_command(tx_buf, 2, &idcode, idlen);
+
+    NRF_LOG_DEBUG("%s(%d) RREG ADS_ID, ID code = 0x%x, ID len = 0x%x.",
+		  __FILENAME__, __LINE__,
+		  idcode, idlen);
+
+    nrf_delay_ms(1);
+    nrf_gpio_pin_set(SPI_SS_PIN); // Turn off CS.
+
+    return err_code;
+}
+
+#define CHANNEL_SETTING_NOICE        0x1
+#define CHANNEL_SETTING_NOICE_SQUARE 0x5
+ret_code_t ads_set_channel_x(uint8_t chan_set)
+{
+    ret_code_t err_code = GENERAL_FAILURE;
+    uint8_t tx_reg[3] = { 0, 0, 0 };
+
+    for (int i = 0; i < NUMBER_OF_CHANNELS; i++)
+    {
+	// Set All Channels to Input Short WREG CHnSET chan_set
+	tx_reg[0] = (ADS_WREG << 5 | ((i + 1) & 0x1f));
+	tx_reg[1] = 0;
+	tx_reg[2] = chan_set;
+	err_code = ads_send_command(tx_reg, 3, NULL, 0);
+	MY_ERROR_CHECK(err_code);
+    }
+    NRF_LOG_DEBUG("%s(%d) WREG CHnSET 0x%x 0x%x 0x%x for all eight channels",
+		  __FILENAME__, __LINE__, tx_reg[0], tx_reg[1], tx_reg[2]);
 
     return err_code;
 }
 
 ret_code_t ads_hello_world(void)
 {
-    ret_code_t err_code = 0xffff; // Todo: no code for initiating err_code to unsuccessful.
+    ret_code_t err_code = GENERAL_FAILURE;
+    uint8_t tx_reg[3] = { 0, 0, 0 };
  
+    NRF_LOG_DEBUG("Start of Hello World");
+
     // Device Wakes Up in RDATAC Mode, so Send
     // SDATAC Command so Registers can be Written
-    uint8_t cmd = ADS_SDATAC;
     NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&cmd, 1, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    MY_ERROR_CHECK(ads_send_command(&ADS_SDATAC, 1, NULL, 0));
 
     // If Using Internal Reference, Send This Command WREG CONFIG3 0xC0
-    uint8_t tx_reg[3] = { (ADS_WREG << 5 | (CONFIG3 & 0x1f)), 2, 0xC0 };
-    NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    /* tx_reg[0] = (ADS_WREG << 5 | (CONFIG3 & 0x1f)); */
+    /* tx_reg[1] = 2; */
+    /* tx_reg[2] = 0xC0; */
+    /* NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__); */
+    /* err_code = ads_send_command(tx_reg, 3, NULL, 0); */
+    /* MY_ERROR_CHECK(err_code); */
 
     // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
     tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f));
     tx_reg[1] = 2;
-    tx_reg[2] = 0x86 ;
+    tx_reg[2] = 0x80;
     NRF_LOG_DEBUG("%s(%d) WREG CONFIG1 0x86.", __FILENAME__, __LINE__);
     err_code = ads_send_command(tx_reg, 3, NULL, 0);
     MY_ERROR_CHECK(err_code);
@@ -209,81 +285,23 @@ ret_code_t ads_hello_world(void)
     err_code = ads_send_command(tx_reg, 3, NULL, 0);
     MY_ERROR_CHECK(err_code);
 
-    // Set All Channels to Input Short WREG CHnSET 0x01
-    tx_reg[0] = (ADS_WREG << 5 | (CH1SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH1SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    tx_reg[0] = (ADS_WREG << 5 | (CH2SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH2SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    tx_reg[0] = (ADS_WREG << 5 | (CH3SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH3SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    tx_reg[0] = (ADS_WREG << 5 | (CH4SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH4SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    tx_reg[0] = (ADS_WREG << 5 | (CH5SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH5SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    tx_reg[0] = (ADS_WREG << 5 | (CH6SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH6SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    tx_reg[0] = (ADS_WREG << 5 | (CH7SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH7SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    tx_reg[0] = (ADS_WREG << 5 | (CH8SET & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x01;
-    NRF_LOG_DEBUG("%s(%d) WREG CH8SET 0x01.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    err_code = ads_set_channel_x(CHANNEL_SETTING_NOICE);
 
-    // Activate Conversion
+    // Start Conversion
     // After This Point !DRDY Should Toggle at
     // fclk /4096
-    cmd = ADS_START;
     NRF_LOG_DEBUG("%s(%d) ADS_START.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&cmd, 1, NULL, 0);
+    err_code = ads_send_command(&ADS_START, 1, NULL, 0);
 
-    // Put the Device Back in RDATAC Mode
-    cmd = ADS_RDATAC;
+    // Put the Device Back in RDATA Mode
     NRF_LOG_DEBUG("%s(%d) RDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&cmd, 1, NULL, 0);
-
-    // Capture Data and Check Noise
-    // Look for !DRDY and Issue 24 + n * 24 SCLKs Todo: What does n mean?
-    while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
+    err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0);
 
     // SDATAC Command so Registers can be Written
     NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&cmd, 1, NULL, 0);
+    err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
     MY_ERROR_CHECK(err_code);
 
-    tx_reg[0] = (ADS_RREG << 5 | (RLD_SENSP & 0x1f));
-    tx_reg[1] = NUMBER_OF_CHANNELS;
-    NRF_LOG_DEBUG("%s(%d) RREG RLD_SENSP.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, rx_buf, REC_BUF_LEN);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]);
@@ -294,10 +312,56 @@ ret_code_t ads_hello_world(void)
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]);
 
-    tx_reg[0] = (ADS_RREG << 5 | (RLD_SENSN & 0x1f));
-    tx_reg[1] = NUMBER_OF_CHANNELS;
-    NRF_LOG_DEBUG("%s(%d) RREG RLD_SENSN.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, rx_buf, REC_BUF_LEN);
+ /* ---- */
+
+    NRF_LOG_DEBUG("%s(%d) ADS_RESET.", __FILENAME__, __LINE__);
+    err_code = ads_send_command(&ADS_RESET, 1, NULL, 0);
+    MY_ERROR_CHECK(err_code);
+
+    // Device Wakes Up in RDATAC Mode, so Send
+    // SDATAC Command so Registers can be Written
+    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    err_code = ads_send_command(&ADS_SDATAC, 1, NULL, 0);
+    MY_ERROR_CHECK(err_code);
+
+    // If Using Internal Reference, Send This Command WREG CONFIG3 0xC0
+    /* tx_reg[0] = (ADS_WREG << 5 | (CONFIG3 & 0x1f)); */
+    /* tx_reg[1] = 2; */
+    /* tx_reg[2] = 0xC0; */
+    /* NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__); */
+    /* err_code = ads_send_command(tx_reg, 3, NULL, 0); */
+    /* MY_ERROR_CHECK(err_code); */
+
+    // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
+    tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f));
+    tx_reg[1] = 2;
+    tx_reg[2] = 0x86;
+    NRF_LOG_DEBUG("%s(%d) WREG CONFIG1 0x86.", __FILENAME__, __LINE__);
+    err_code = ads_send_command(tx_reg, 3, NULL, 0);
+    MY_ERROR_CHECK(err_code);
+    // WREG CONFIG2 0x10
+    tx_reg[0] = (ADS_WREG << 5 | (CONFIG2 & 0x1f));
+    tx_reg[1] = 3;
+    tx_reg[2] = 0x10;
+    NRF_LOG_DEBUG("%s(%d) WREG CONFIG2 0x10.", __FILENAME__, __LINE__);
+    err_code = ads_send_command(tx_reg, 3, NULL, 0);
+    MY_ERROR_CHECK(err_code);
+
+    err_code = ads_set_channel_x(CHANNEL_SETTING_NOICE_SQUARE);
+    
+    /* // Put the Device Back in RDATA Mode */
+    MY_ERROR_CHECK(err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0));
+
+    // Activate Conversion
+    // After This Point !DRDY Should Toggle at
+    // fclk /4096
+    MY_ERROR_CHECK(err_code = ads_send_command(&ADS_START, 1, NULL, 0));
+
+    // SDATAC Command so Registers can be Written
+    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
+    MY_ERROR_CHECK(err_code);
+
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]);

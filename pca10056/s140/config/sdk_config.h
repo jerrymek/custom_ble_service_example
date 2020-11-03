@@ -1374,15 +1374,13 @@
 
 //==========================================================
 // <h> SPI_CONFIGURATION - Spi configuration
-
 //==========================================================
-// <o> SPI_SCK_PIN  - Pin number
  
 // <0=> 0 (P0.0) 
 // <1=> 1 (P0.1) 
 // <2=> 2 (P0.2) 
-// <3=> 3 (P0.3) 
-// <4=> 4 (P0.4) 
+// <3=> 3 (P0.3)    SPI_SCK_PIN
+// <4=> 4 (P0.4)    SPI_MOSI_PIN
 // <5=> 5 (P0.5) 
 // <6=> 6 (P0.6) 
 // <7=> 7 (P0.7) 
@@ -1404,12 +1402,12 @@
 // <23=> 23 (P0.23) 
 // <24=> 24 (P0.24) 
 // <25=> 25 (P0.25) 
-// <26=> 26 (P0.26) 
-// <27=> 27 (P0.27) 
-// <28=> 28 (P0.28) 
-// <29=> 29 (P0.29) 
-// <30=> 30 (P0.30) 
-// <31=> 31 (P0.31) 
+// <26=> 26 (P0.26) I2C_SDA_PIN
+// <27=> 27 (P0.27) I2C_SCL_PIN
+// <28=> 28 (P0.28) SPI_MISO_PIN
+// <29=> 29 (P0.29) SPI_SS_PIN
+// <30=> 30 (P0.30) SPI_DRDY_PIN
+// <31=> 31 (P0.31) ADS_RESET_PIN
 // <32=> 32 (P1.0) 
 // <33=> 33 (P1.1) 
 // <34=> 34 (P1.2) 
@@ -1443,6 +1441,9 @@
 #endif
 #ifndef SPI_DRDY_PIN
 #define SPI_DRDY_PIN 30 // Connected from P0.30 to J3:15
+#endif
+#ifndef ADS_RESET_PIN
+#define ADS_RESET_PIN 31 // Connected from P0.30 to J3:8
 #endif
 
 // <o> SPI_IRQ_PRIORITY  - Interrupt priority
@@ -4271,6 +4272,16 @@
 // </e>
 
 // </e>
+
+// <e> NRFX_TWI_ENABLED - nrfx_twi - TWI peripheral driver
+//==========================================================
+
+#ifndef I2C_SDA_PIN
+#define I2C_SDA_PIN             26    // Connected from P0.26 to DA on beakout.
+#endif
+#ifndef I2C_SCL_PIN
+#define I2C_SCL_PIN             27    // Connected from P0.27 to CL on breakout.
+#endif
 
 // <e> NRFX_TWI_ENABLED - nrfx_twi - TWI peripheral driver
 //==========================================================
@@ -7452,7 +7463,7 @@
 // <i> Log data is buffered and can be processed in idle.
 
 #ifndef NRF_LOG_DEFERRED
-#define NRF_LOG_DEFERRED 1
+#define NRF_LOG_DEFERRED 0
 #endif
 
 // <o> NRF_LOG_BUFSIZE  - Size of the buffer for storing logs (in bytes).

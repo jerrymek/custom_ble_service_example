@@ -7,6 +7,7 @@
 #define _ADS1298_DRV_H_
 
 ret_code_t ads_init_spi(void);
+ret_code_t ads_read_ID(void);
 ret_code_t ads_hello_world (void);
 ret_code_t ads_wakeup (void);
 ret_code_t ads_standby (void);
