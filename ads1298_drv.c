@@ -365,9 +365,9 @@ ret_code_t ads_hello_world(void)
     MY_ERROR_CHECK(err_code = ads_send_command(&ADS_START, 1, NULL, 0));
 
     // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
-    MY_ERROR_CHECK(err_code);
+    /* NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__); */
+    /* err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN); */
+    /* MY_ERROR_CHECK(err_code); */
 
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
