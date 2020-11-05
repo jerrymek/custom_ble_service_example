@@ -142,11 +142,18 @@ ret_code_t ads_send_command(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, ui
 {
     ret_code_t err_code = GENERAL_FAILURE;
     spi_xfer_done = false;
+    nrf_gpio_pin_clear(SPI_SS_PIN);
+    if ( rx_len > 0 )
+    {
+	while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
+    }
     err_code = nrf_drv_spi_transfer(&spi, tx_buf, tx_len, rx_buf, rx_len);
     while (!spi_xfer_done)
     {
         __WFE();
     }
+
+    nrf_gpio_pin_set(SPI_SS_PIN);
     MY_ERROR_CHECK(err_code);
     return err_code;
 }
