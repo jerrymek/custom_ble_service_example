@@ -190,30 +190,49 @@ static uint8_t imu_buf[] = {0x30, 0xe,
 			    0x56, 0x56, 0x56, 0x56};
 
 static uint8_t emg_buf[] = {0x10, 0x12,
-			    0x65, 0x65, 0x65, 0x65,
-			    0x65, 0x65, 0x65, 0x65,
-			    0x65, 0x65, 0x65, 0x65,
-			    0x65, 0x65, 0x65, 0x65};
+ 			    0x65, 0x65, 0x65, 0x65,
+ 			    0x65, 0x65, 0x65, 0x65,
+ 			    0x65, 0x65, 0x65, 0x65,
+ 			    0x65, 0x65, 0x65, 0x65};
+
+/* static uint8_t emg_buf[] = {0x10, 0x5, */
+/* 			    0x0, 0x0, 0x0}; */
 
 static void timer_timeout_sensor_handler(void * p_context)
 {
-    uint32_t err_code = 0;
-    static uint8_t buf_index;
-    if (buf_index % 2 == 0)
-    {
+      uint32_t err_code = 0;
+      static uint8_t buf_index;
+      if (buf_index % 2 == 0)
+      {
 	nrf_gpio_pin_toggle(LED_3);
 	err_code = data_stream_update(&m_sensor_service,
 				      imu_buf);
-    }
-    else
-    {
+      }
+      else
+      {
+	uint8_t rx_buf[REC_BUF_LEN] = { 0, 0, 0,
+					0, 0, 0,
+					0, 0, 0,
+					0, 0, 0,
+					0, 0, 0,
+					0, 0, 0,
+					0, 0, 0,
+					0, 0, 0,
+					0, 0, 0};
+
+	err_code = ads_start_measurerment(rx_buf);
+	MY_ERROR_LOG(err_code);
+	emg_buf[2] = rx_buf[3];
+	emg_buf[3] = rx_buf[4];
+	emg_buf[4] = rx_buf[5];
 	nrf_gpio_pin_toggle(LED_4);
 	err_code = data_stream_update(&m_sensor_service,
 				      emg_buf);
-    }
+      }
 // Todo:   MY_ERROR_CHECK(err_code);
-    MY_ERROR_LOG(err_code);
-    buf_index++;
+      MY_ERROR_LOG(err_code);
+
+      buf_index++;
 }
 
 
@@ -1068,17 +1087,15 @@ int main(void)
     advertising_start(erase_bonds);
 
 //    (void)ads_read_ID();
-    (void)ads_hello_world();
+//    (void)ads_hello_world();
    
     for (;;)
     {
 	idle_state_handle();
 
-        /* bsp_board_led_invert(BSP_BOARD_LED_0); */
-	nrf_gpio_pin_toggle(SPI_SS_PIN);     // SPI chip select; active low
-    }
+	bsp_board_led_invert(BSP_BOARD_LED_0);
+   }
 }
-
 
 /**
  * @}
