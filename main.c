@@ -207,6 +207,8 @@ static void timer_timeout_sensor_handler(void * p_context)
 	nrf_gpio_pin_toggle(LED_3);
 	err_code = data_stream_update(&m_sensor_service,
 				      imu_buf);
+// Todo:   MY_ERROR_CHECK(err_code);
+	MY_ERROR_LOG(err_code);
       }
       else
       {
@@ -228,9 +230,9 @@ static void timer_timeout_sensor_handler(void * p_context)
 	nrf_gpio_pin_toggle(LED_4);
 	err_code = data_stream_update(&m_sensor_service,
 				      emg_buf);
-      }
 // Todo:   MY_ERROR_CHECK(err_code);
-      MY_ERROR_LOG(err_code);
+	MY_ERROR_LOG(err_code);
+      }
 
       buf_index++;
 }
