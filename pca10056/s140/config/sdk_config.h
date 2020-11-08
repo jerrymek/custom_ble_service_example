@@ -5455,6 +5455,11 @@
 #define NRF_SPI_DRV_MISO_PULLUP_CFG 1
 #endif
 
+// <e> SPI0_ENABLED - Enable SPI0 instance
+//==========================================================
+#ifndef SPI0_ENABLED
+#define SPI0_ENABLED 0
+#endif
 // <q> SPI0_USE_EASY_DMA  - Use EasyDMA
  
 
@@ -7463,7 +7468,7 @@
 // <i> Log data is buffered and can be processed in idle.
 
 #ifndef NRF_LOG_DEFERRED
-#define NRF_LOG_DEFERRED 0
+#define NRF_LOG_DEFERRED 1
 #endif
 
 // <o> NRF_LOG_BUFSIZE  - Size of the buffer for storing logs (in bytes).

@@ -169,8 +169,8 @@ void sensor_service_init(ble_ss_t * p_sensor_service)
     /*                           uint8_t const *p_sys_attr_data, */
     /*                           sizeof(p_sensor_service), */
     /*                           uint32_t flags)); */
-    err_code = sd_ble_gatts_sys_attr_set(p_sensor_service->conn_handle, NULL, 0, flags);
-    MY_ERROR_CHECK(err_code);
+// Todo:    err_code = sd_ble_gatts_sys_attr_set(p_sensor_service->conn_handle, NULL, 0, flags);
+//    MY_ERROR_CHECK(err_code);
 
     // Call the function sensor_char_add() to add our new characteristic
     // to the service. 
@@ -183,16 +183,16 @@ uint32_t data_stream_update(ble_ss_t *p_sensor_service,
     uint32_t err_code = 0;
     if (p_sensor_service->conn_handle != BLE_CONN_HANDLE_INVALID)
     {
-        ble_gatts_hvx_params_t hvx_params;
-        memset(&hvx_params, 0, sizeof(hvx_params));
-        hvx_params.handle = p_sensor_service->char_handles.value_handle;
-        hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
-        hvx_params.offset = 0;
-        hvx_params.p_len  = buf[1];
-        hvx_params.p_data = buf;
+	ble_gatts_hvx_params_t hvx_params;
+	memset(&hvx_params, 0, sizeof(hvx_params));
+        uint16_t packet_length = buf[1];
+	hvx_params.handle = p_sensor_service->char_handles.value_handle;
+	hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+	hvx_params.offset = 0;
+	hvx_params.p_len  = &packet_length;
+	hvx_params.p_data = buf;
 
-        err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
-        MY_ERROR_CHECK(err_code);
+	err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
     }
     return err_code;
 }

@@ -122,7 +122,7 @@ void spi_event_handler(nrf_drv_spi_evt_t const * p_event,
                        void *                    p_context)
 {
     spi_xfer_done = true;
-//    NRF_LOG_DEBUG("%s(%d) Transfer completed.", __FILENAME__, __LINE__);
+//Todo:    NRF_LOG_DEBUG("%s(%d) Transfer completed.", __FILENAME__, __LINE__);
 }
 
 #define GENERAL_FAILURE 0xffff  // Todo: no code for initiating err_code to unsuccessful.
@@ -135,10 +135,15 @@ ret_code_t ads_send_command(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, ui
     {
     	while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
     }
-    err_code = nrf_drv_spi_transfer(&spi, tx_buf, tx_len, rx_buf, rx_len);
+    while ((err_code = nrf_drv_spi_transfer(&spi,
+					    tx_buf,
+					    tx_len,
+					    rx_buf,
+					    rx_len)) == NRF_ERROR_BUSY);
     MY_ERROR_CHECK(err_code);
+    // Todo: Refactor to a timer instead.
     uint16_t i = 0;
-    while (!spi_xfer_done && (i<1000))
+    while (!spi_xfer_done && (i<100))
     {
         __WFE();
 	i++;
@@ -289,19 +294,16 @@ ret_code_t ads_start_measurerment(uint8_t *rx_buf)
     // Start Conversion
     // After This Point !DRDY Should Toggle at
     // fclk /4096
-    NRF_LOG_DEBUG("%s(%d) ADS_START(0x%x).", __FILENAME__, __LINE__, ADS_START);
     err_code = ads_send_command(&ADS_START, 1, NULL, 0);
     MY_ERROR_CHECK(err_code);
 
     // Put the Device Back in RDATAC Mode
-    NRF_LOG_DEBUG("%s(%d) ADS_RDATAC(0x%x).", __FILENAME__, __LINE__, ADS_RDATAC);
     err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0);
     MY_ERROR_CHECK(err_code);
 
     while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
 
     // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC(0x%x).", __FILENAME__, __LINE__, ADS_SDATAC);
     err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
     MY_ERROR_CHECK(err_code);
 

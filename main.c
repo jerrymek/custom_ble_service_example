@@ -163,7 +163,7 @@ APP_TIMER_DEF(m_sensor_char_timer_id);
 static void advertising_start(bool erase_bonds);
 
 // timer event handler
-static void timer_timeout_our_handler(void * p_context)
+static void timeout_our_handler(void * p_context)
 {
     // Update temperature and characteristic value.
     int32_t temperature = 0;
@@ -189,16 +189,16 @@ static uint8_t imu_buf[] = {0x30, 0xe,
 			    0x56, 0x56, 0x56, 0x56,
 			    0x56, 0x56, 0x56, 0x56};
 
-static uint8_t emg_buf[] = {0x10, 0x12,
- 			    0x65, 0x65, 0x65, 0x65,
- 			    0x65, 0x65, 0x65, 0x65,
- 			    0x65, 0x65, 0x65, 0x65,
- 			    0x65, 0x65, 0x65, 0x65};
-
 /* static uint8_t emg_buf[] = {0x10, 0x5, */
-/* 			    0x0, 0x0, 0x0}; */
+/*  			    0x65, 0x65, 0x65, 0x65, */
+/*  			    0x65, 0x65, 0x65, 0x65, */
+/*  			    0x65, 0x65, 0x65, 0x65, */
+/*  			    0x65, 0x65, 0x65, 0x65}; */
 
-static void timer_timeout_sensor_handler(void * p_context)
+static uint8_t emg_buf[] = {0x10, 0x5,
+			    0x0, 0x0, 0x0};
+
+static void timeout_sensor_handler(void * p_context)
 {
     uint32_t err_code = 0;
     static uint8_t buf_index;
@@ -207,7 +207,7 @@ static void timer_timeout_sensor_handler(void * p_context)
         nrf_gpio_pin_toggle(LED_3);
         err_code = data_stream_update(&m_sensor_service,
                                       imu_buf);
-        MY_ERROR_CHECK(err_code);
+        MY_ERROR_LOG(err_code);
     }
     else
     {
@@ -248,12 +248,13 @@ static void timer_timeout_sensor_handler(void * p_context)
         /* emg_buf[24] = rx_buf[5]; */
         /* emg_buf[25] = rx_buf[5]; */
         /* emg_buf[26] = rx_buf[5]; */
-        /* nrf_gpio_pin_toggle(LED_4); */
+        nrf_gpio_pin_toggle(LED_4);
         err_code = data_stream_update(&m_sensor_service,
                                       emg_buf);
-        MY_ERROR_CHECK(err_code);
+        MY_ERROR_LOG(err_code);
     }
-
+// Todo:   MY_ERROR_CHECK(err_code);
+//    MY_ERROR_LOG(err_code);
     buf_index++;
 }
 
@@ -535,8 +536,8 @@ static void timers_init(void)
     MY_ERROR_CHECK(err_code);
 
     // Initiate timer
-    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_our_handler);
-    app_timer_create(&m_sensor_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_sensor_handler);
+//Todo:    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timeout_our_handler);
+    app_timer_create(&m_sensor_char_timer_id, APP_TIMER_MODE_REPEATED, timeout_sensor_handler);
 
 }
 
@@ -797,7 +798,7 @@ static void sleep_mode_enter(void)
     MY_ERROR_CHECK(err_code);
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
 // Todo:    err_code = sd_power_system_off();
-    MY_ERROR_CHECK(err_code);
+//    MY_ERROR_CHECK(err_code);
 }
 
 
@@ -856,8 +857,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
 	MY_ERROR_CHECK(err_code);
 
-	err_code = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
-	MY_ERROR_CHECK(err_code);
+// Todo:	err_code = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
+//	MY_ERROR_CHECK(err_code);
 
 	//When connected; start our timer to start regular temperature measurements
 	app_timer_start(m_our_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
@@ -1113,11 +1114,32 @@ int main(void)
 
 //    (void)ads_read_ID();
 //    (void)ads_hello_world();
-   
+    uint8_t rx_buf[REC_BUF_LEN] = { 0, 0, 0,
+				    0, 0, 0,
+				    0, 0, 0,
+				    0, 0, 0,
+				    0, 0, 0,
+				    0, 0, 0,
+				    0, 0, 0,
+				    0, 0, 0,
+				    0, 0, 0};
+
+    err_code = ads_set_config(0xA0, 0x00);
+
+    err_code = ads_set_channel_x(INPUT_SHORTED);
+
     for (;;)
     {
 	idle_state_handle();
 
+//        err_code = ads_read_basic_data(rx_buf);
+	err_code = ads_start_measurerment(rx_buf);
+
+//	ads_print_rec_data(rx_buf);
+        MY_ERROR_LOG(err_code);
+        emg_buf[2] = rx_buf[3];
+        emg_buf[3] = rx_buf[4];
+        emg_buf[4] = rx_buf[5];
 	bsp_board_led_invert(BSP_BOARD_LED_0);
    }
 }
