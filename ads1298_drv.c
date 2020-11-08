@@ -136,13 +136,15 @@ ret_code_t ads_send_command(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, ui
     	while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
     }
     err_code = nrf_drv_spi_transfer(&spi, tx_buf, tx_len, rx_buf, rx_len);
-    while (!spi_xfer_done)
+    MY_ERROR_CHECK(err_code);
+    uint16_t i = 0;
+    while (!spi_xfer_done && (i<1000))
     {
         __WFE();
+	i++;
     }
 
     nrf_gpio_pin_set(SPI_SS_PIN);
-    MY_ERROR_CHECK(err_code);
     return err_code;
 }
 
@@ -178,10 +180,6 @@ ret_code_t ads_init_spi(void)
     spi_config.mode      = NRF_DRV_SPI_MODE_1;
     err_code = nrf_drv_spi_init(&spi, &spi_config, spi_event_handler, NULL);
     MY_ERROR_CHECK(err_code);
-
-    err_code = ads_set_config(0xA0, 0x00);
-
-    err_code = ads_set_channel_x(INPUT_SHORTED);
 
     return err_code;
 }
@@ -251,7 +249,8 @@ ret_code_t ads_set_config(uint8_t config1_settings, uint8_t config2_settings)
     // Device Wakes Up in RDATAC Mode, so Send
     // SDATAC Command so Registers can be Written
     NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    MY_ERROR_CHECK(ads_send_command(&ADS_SDATAC, 1, NULL, 0));
+    err_code = ads_send_command(&ADS_SDATAC, 1, NULL, 0);
+    MY_ERROR_CHECK(err_code);
 
     NRF_LOG_DEBUG("%s(%d) ADS_RESET(0x%x).", __FILENAME__, __LINE__, ADS_RESET);
     err_code = ads_send_command(&ADS_RESET, 1, NULL, 0);
@@ -401,8 +400,9 @@ ret_code_t ads_read_basic_data(uint8_t *rx_buf)
 
     err_code = ads_start_measurerment(rx_buf);
 
-    //    ads_print_rec_data(rx_buf);
+    ads_print_rec_data(rx_buf);
 
     return (err_code);
 
 }
+ 

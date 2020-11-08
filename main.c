@@ -200,41 +200,61 @@ static uint8_t emg_buf[] = {0x10, 0x12,
 
 static void timer_timeout_sensor_handler(void * p_context)
 {
-      uint32_t err_code = 0;
-      static uint8_t buf_index;
-      if (buf_index % 2 == 0)
-      {
-	nrf_gpio_pin_toggle(LED_3);
-	err_code = data_stream_update(&m_sensor_service,
-				      imu_buf);
-// Todo:   MY_ERROR_CHECK(err_code);
-	MY_ERROR_LOG(err_code);
-      }
-      else
-      {
-	uint8_t rx_buf[REC_BUF_LEN] = { 0, 0, 0,
-					0, 0, 0,
-					0, 0, 0,
-					0, 0, 0,
-					0, 0, 0,
-					0, 0, 0,
-					0, 0, 0,
-					0, 0, 0,
-					0, 0, 0};
+    uint32_t err_code = 0;
+    static uint8_t buf_index;
+    if (buf_index % 2 == 0)
+    {
+        nrf_gpio_pin_toggle(LED_3);
+        err_code = data_stream_update(&m_sensor_service,
+                                      imu_buf);
+        MY_ERROR_CHECK(err_code);
+    }
+    else
+    {
+        /* uint8_t rx_buf[REC_BUF_LEN] = { 0, 0, 0, */
+        /* 				0, 0, 0, */
+        /* 				0, 0, 0, */
+        /* 				0, 0, 0, */
+        /* 				0, 0, 0, */
+        /* 				0, 0, 0, */
+        /* 				0, 0, 0, */
+        /* 				0, 0, 0, */
+        /* 				0, 0, 0}; */
 
-	err_code = ads_start_measurerment(rx_buf);
-	MY_ERROR_LOG(err_code);
-	emg_buf[2] = rx_buf[3];
-	emg_buf[3] = rx_buf[4];
-	emg_buf[4] = rx_buf[5];
-	nrf_gpio_pin_toggle(LED_4);
-	err_code = data_stream_update(&m_sensor_service,
-				      emg_buf);
-// Todo:   MY_ERROR_CHECK(err_code);
-	MY_ERROR_LOG(err_code);
-      }
+        /* err_code = ads_read_basic_data(rx_buf); */
+        /* MY_ERROR_LOG(err_code); */
+        /* emg_buf[2] = rx_buf[3]; */
+        /* emg_buf[3] = rx_buf[4]; */
+        /* emg_buf[4] = rx_buf[5]; */
+        /* emg_buf[5] = rx_buf[5]; */
+        /* emg_buf[6] = rx_buf[5]; */
+        /* emg_buf[7] = rx_buf[5]; */
+        /* emg_buf[8] = rx_buf[5]; */
+        /* emg_buf[9] = rx_buf[5]; */
+        /* emg_buf[10] = rx_buf[5]; */
+        /* emg_buf[11] = rx_buf[5]; */
+        /* emg_buf[12]= rx_buf[5]; */
+        /* emg_buf[13] = rx_buf[5]; */
+        /* emg_buf[14] = rx_buf[5]; */
+        /* emg_buf[15] = rx_buf[5]; */
+        /* emg_buf[16] = rx_buf[5]; */
+        /* emg_buf[17] = rx_buf[5]; */
+        /* emg_buf[18] = rx_buf[5]; */
+        /* emg_buf[19] = rx_buf[5]; */
+        /* emg_buf[20] = rx_buf[5]; */
+        /* emg_buf[21] = rx_buf[5]; */
+        /* emg_buf[22] = rx_buf[5]; */
+        /* emg_buf[23] = rx_buf[5]; */
+        /* emg_buf[24] = rx_buf[5]; */
+        /* emg_buf[25] = rx_buf[5]; */
+        /* emg_buf[26] = rx_buf[5]; */
+        /* nrf_gpio_pin_toggle(LED_4); */
+        err_code = data_stream_update(&m_sensor_service,
+                                      emg_buf);
+        MY_ERROR_CHECK(err_code);
+    }
 
-      buf_index++;
+    buf_index++;
 }
 
 
@@ -834,6 +854,9 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	MY_ERROR_CHECK(err_code);
 	m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
 	err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
+	MY_ERROR_CHECK(err_code);
+
+	err_code = sd_ble_gatts_sys_attr_set(m_conn_handle, NULL, 0, 0);
 	MY_ERROR_CHECK(err_code);
 
 	//When connected; start our timer to start regular temperature measurements
