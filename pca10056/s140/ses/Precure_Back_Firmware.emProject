@@ -96,21 +96,29 @@
       <file file_name="$(SDK)/components/libraries/bsp/bsp_btn_ble.c" />
     </folder>
     <folder Name="Application">
-      <file file_name="../../../main.c" />
-      <file file_name="../config/sdk_config.h" />
-      <file file_name="../../../our_service.c">
+      <file file_name="main.c" />
+      <file file_name="sdk_config.h" />
+      <file file_name="our_service.c">
         <configuration
           Name="Debug"
           build_exclude_from_build="Yes"
           c_additional_options="" />
       </file>
-      <file file_name="../../../sensor_service.c" />
-      <file file_name="../../../sensor_service.h" />
+      <file file_name="sensor_service.c" />
+      <file file_name="sensor_service.h" />
       <file file_name="../../../our_service.c" />
-      <file file_name="../../../our_service.h" />
-      <file file_name="../../../log_support.h" />
-      <file file_name="../../../ads1298_drv.c" />
-      <file file_name="../../../ads1298_drv.h" />
+      <file file_name="our_service.h" />
+      <file file_name="log_support.h" />
+      <file file_name="ads1298_drv.c" />
+      <file file_name="ads1298_drv.h" />
+      <file file_name="icm20948_drv.c" />
+      <file file_name="icm20948_sensor.c" />
+      <file file_name="icm20948_system.c" />
+      <file file_name="icm20948_drv.h" />
+      <file file_name="icm20948_img.dmp3a.h" />
+      <file file_name="icm20948_sensor.h" />
+      <file file_name="icm20948_system.h" />
+      <file file_name="../../../uuid.h" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(SDK)/external/segger_rtt/SEGGER_RTT.c" />
@@ -150,6 +158,45 @@
       c_only_additional_options=""
       linker_section_placements_segments="FLASH RX 0x0 0x100000;RAM RWX 0x20000000 0x40000"
       macros="-D BASE_FILE_NAME=\\&quot;$*.c\\&quot;" />
+    <file file_name="../../../../../../modules/nrfx/drivers/src/nrfx_twim.c" />
+    <file file_name="../../../Invn/Devices/Drivers/Ak0991x/Ak0991x.h" />
+    <file file_name="../../../Invn/Devices/Drivers/Ak0991x/Ak0991xSerif.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948Augmented.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948AuxCompassAkm.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948AuxTransport.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948DataBaseControl.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948DataBaseDriver.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948DataConverter.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948Defs.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948Dmp3Driver.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948LoadFirmware.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948MPUFifoControl.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948SelfTest.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948Serif.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948Setup.h" />
+    <file file_name="../../../Invn/Devices/Drivers/ICM20948/Icm20948Transport.h" />
+    <file file_name="../../../Invn/Devices/CustomCommand.h" />
+    <file file_name="../../../Invn/Devices/SensorConfig.h" />
+    <file file_name="../../../Invn/Devices/SensorTypes.h" />
+    <file file_name="../../../Invn/DynamicProtocol/DynProtocol.h" />
+    <file file_name="../../../Invn/DynamicProtocol/DynProtocolTransport.h" />
+    <file file_name="../../../Invn/DynamicProtocol/DynProtocolTransportUart.h" />
+    <file file_name="../../../Invn/EmbUtils/dataconverter.h" />
+    <file file_name="../../../Invn/EmbUtils/ErrorHelper.h" />
+    <file file_name="../../../Invn/EmbUtils/InvAssert.h" />
+    <file file_name="../../../Invn/EmbUtils/InvBool.h" />
+    <file file_name="../../../Invn/EmbUtils/InvError.h" />
+    <file file_name="../../../Invn/EmbUtils/InvExport.h" />
+    <file file_name="../../../Invn/EmbUtils/InvProtocol.h" />
+    <file file_name="../../../Invn/EmbUtils/InvQueue.h" />
+    <file file_name="../../../Invn/EmbUtils/InvScheduler.h" />
+    <file file_name="../../../Invn/EmbUtils/Message.h" />
+    <file file_name="../../../Invn/EmbUtils/RingBuffer.h" />
+    <file file_name="../../../Invn/EmbUtils/RingByteBuffer.h" />
+    <file file_name="../../../Invn/VSensor/vsensorconfig.h" />
+    <file file_name="../../../Invn/VSensor/VSensorData.h" />
+    <file file_name="../../../Invn/IDDVersion.h" />
   </project>
   <configuration
     Name="Release"
