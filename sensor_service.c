@@ -191,7 +191,6 @@ uint32_t data_stream_update(ble_ss_t *p_sensor_service,
 	hvx_params.offset = 0;
 	hvx_params.p_len  = &packet_length;
 	hvx_params.p_data = buf;
-
 	err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
     }
     return err_code;

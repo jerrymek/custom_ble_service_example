@@ -207,54 +207,15 @@ static void timeout_sensor_handler(void * p_context)
         nrf_gpio_pin_toggle(LED_3);
         err_code = data_stream_update(&m_sensor_service,
                                       imu_buf);
-        MY_ERROR_LOG(err_code);
+//        MY_ERROR_LOG(err_code);
     }
     else
     {
-        /* uint8_t rx_buf[REC_BUF_LEN] = { 0, 0, 0, */
-        /* 				0, 0, 0, */
-        /* 				0, 0, 0, */
-        /* 				0, 0, 0, */
-        /* 				0, 0, 0, */
-        /* 				0, 0, 0, */
-        /* 				0, 0, 0, */
-        /* 				0, 0, 0, */
-        /* 				0, 0, 0}; */
-
-        /* err_code = ads_read_basic_data(rx_buf); */
-        /* MY_ERROR_LOG(err_code); */
-        /* emg_buf[2] = rx_buf[3]; */
-        /* emg_buf[3] = rx_buf[4]; */
-        /* emg_buf[4] = rx_buf[5]; */
-        /* emg_buf[5] = rx_buf[5]; */
-        /* emg_buf[6] = rx_buf[5]; */
-        /* emg_buf[7] = rx_buf[5]; */
-        /* emg_buf[8] = rx_buf[5]; */
-        /* emg_buf[9] = rx_buf[5]; */
-        /* emg_buf[10] = rx_buf[5]; */
-        /* emg_buf[11] = rx_buf[5]; */
-        /* emg_buf[12]= rx_buf[5]; */
-        /* emg_buf[13] = rx_buf[5]; */
-        /* emg_buf[14] = rx_buf[5]; */
-        /* emg_buf[15] = rx_buf[5]; */
-        /* emg_buf[16] = rx_buf[5]; */
-        /* emg_buf[17] = rx_buf[5]; */
-        /* emg_buf[18] = rx_buf[5]; */
-        /* emg_buf[19] = rx_buf[5]; */
-        /* emg_buf[20] = rx_buf[5]; */
-        /* emg_buf[21] = rx_buf[5]; */
-        /* emg_buf[22] = rx_buf[5]; */
-        /* emg_buf[23] = rx_buf[5]; */
-        /* emg_buf[24] = rx_buf[5]; */
-        /* emg_buf[25] = rx_buf[5]; */
-        /* emg_buf[26] = rx_buf[5]; */
         nrf_gpio_pin_toggle(LED_4);
         err_code = data_stream_update(&m_sensor_service,
                                       emg_buf);
-        MY_ERROR_LOG(err_code);
+//        MY_ERROR_LOG(err_code);
     }
-// Todo:   MY_ERROR_CHECK(err_code);
-//    MY_ERROR_LOG(err_code);
     buf_index++;
 }
 
@@ -1121,7 +1082,6 @@ int main(void)
 				    0, 0, 0,
 				    0, 0, 0,
 				    0, 0, 0,
-				    0, 0, 0,
 				    0, 0, 0};
 
     err_code = ads_set_config(0xA0, 0x00);
@@ -1134,12 +1094,24 @@ int main(void)
 
 //        err_code = ads_read_basic_data(rx_buf);
 	err_code = ads_start_measurerment(rx_buf);
-
-//	ads_print_rec_data(rx_buf);
         MY_ERROR_LOG(err_code);
-        emg_buf[2] = rx_buf[3];
+        emg_buf[0] = rx_buf[0]; // Device ID
+        emg_buf[1] = rx_buf[1]; // Packet length
+//                   rx_buf[2]; // Status byte
+        emg_buf[2] = rx_buf[3]; // Channel 1
         emg_buf[3] = rx_buf[4];
         emg_buf[4] = rx_buf[5];
+        emg_buf[5] = rx_buf[6]; // Channel 2
+        emg_buf[6] = rx_buf[7];
+        emg_buf[7] = rx_buf[8];
+        emg_buf[8] = rx_buf[9];  // Channel 3
+        emg_buf[9] = rx_buf[10];
+        emg_buf[10] = rx_buf[11];
+        emg_buf[11] = rx_buf[12]; // Channel 4
+        emg_buf[12] = rx_buf[13];
+        emg_buf[13] = rx_buf[15];
+
+//	ads_print_rec_data(rx_buf);
 	bsp_board_led_invert(BSP_BOARD_LED_0);
    }
 }

@@ -141,14 +141,19 @@ ret_code_t ads_send_command(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, ui
 					    rx_buf,
 					    rx_len)) == NRF_ERROR_BUSY);
     MY_ERROR_CHECK(err_code);
-    // Todo: Refactor to a timer instead.
-    uint16_t i = 0;
-    while (!spi_xfer_done && (i<100))
+    while (!spi_xfer_done)
     {
         __WFE();
-	i++;
     }
-
+    if (rx_len > 0)
+    {
+	printf("%d, ", rx_len);
+	for (uint8_t i = 0; i < rx_len; i++)
+	{
+	    printf("%02x", rx_buf[i]);
+	}
+	printf("\n");
+    }
     nrf_gpio_pin_set(SPI_SS_PIN);
     return err_code;
 }
@@ -172,9 +177,11 @@ ret_code_t ads_init_spi(void)
     nrf_gpio_pin_clear(ADS_RESET_PIN);  // 4) Set RESET pin low for a minimum of 2 * tCLK
     nrf_delay_ms(10);                   // 5) wait > 2 * tCLK
     nrf_gpio_pin_set(ADS_RESET_PIN);    // 6) Setting RESET pin high now enables the digital portion of the ADS1298
-    nrf_delay_ms(2500);                 // 7) Wait > 18 * tCLK Before starting to use the device
-    NRF_LOG_DEBUG("%s(%d) Reset of ADS1298 done.",
-		  __FILENAME__, __LINE__);
+//    nrf_delay_ms(2500);                 // 7) Wait > 18 * tCLK Before starting to use the device
+//    NRF_LOG_DEBUG("%s(%d) Reset of ADS1298 done.",
+//		  __FILENAME__, __LINE__);
+    printf("%s(%d) Reset of ADS1298 done.\n",
+	   __FILENAME__, __LINE__);
 
     spi_config.ss_pin = NRF_DRV_SPI_PIN_NOT_USED; // Manual control of the CS pin, set the Slave Select pin to not used.
     spi_config.miso_pin = SPI_MISO_PIN;
@@ -185,6 +192,10 @@ ret_code_t ads_init_spi(void)
     spi_config.mode      = NRF_DRV_SPI_MODE_1;
     err_code = nrf_drv_spi_init(&spi, &spi_config, spi_event_handler, NULL);
     MY_ERROR_CHECK(err_code);
+//    NRF_LOG_DEBUG("%s(%d) SPI initiated.",
+//		  __FILENAME__, __LINE__);
+    printf("%s(%d) SPI initiated.\n",
+	   __FILENAME__, __LINE__);
 
     return err_code;
 }
@@ -345,7 +356,7 @@ ret_code_t ads_hello_world(void)
 
     err_code = ads_start_measurerment(rx_buf);
 
-    ads_print_rec_data(rx_buf);
+//    ads_print_rec_data(rx_buf);
 
  /* ---- */
 
@@ -368,7 +379,7 @@ ret_code_t ads_hello_world(void)
 
     err_code = ads_start_measurerment(rx_buf);
 
-    ads_print_rec_data(rx_buf);
+//    ads_print_rec_data(rx_buf);
 
     NRF_LOG_DEBUG("End of Hello World");
 
@@ -402,7 +413,7 @@ ret_code_t ads_read_basic_data(uint8_t *rx_buf)
 
     err_code = ads_start_measurerment(rx_buf);
 
-    ads_print_rec_data(rx_buf);
+//    ads_print_rec_data(rx_buf);
 
     return (err_code);
 
