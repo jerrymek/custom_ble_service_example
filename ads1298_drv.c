@@ -321,63 +321,63 @@ ret_code_t ads_hello_world(void)
 
  /* ---- */
 
-    NRF_LOG_DEBUG("%s(%d) ADS_RESET.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&ADS_RESET, 1, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    /* NRF_LOG_DEBUG("%s(%d) ADS_RESET.", __FILENAME__, __LINE__); */
+    /* err_code = ads_send_command(&ADS_RESET, 1, NULL, 0); */
+    /* MY_ERROR_CHECK(err_code); */
 
-    // Device Wakes Up in RDATAC Mode, so Send
-    // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&ADS_SDATAC, 1, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    /* // Device Wakes Up in RDATAC Mode, so Send */
+    /* // SDATAC Command so Registers can be Written */
+    /* NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__); */
+    /* err_code = ads_send_command(&ADS_SDATAC, 1, NULL, 0); */
+    /* MY_ERROR_CHECK(err_code); */
 
-    // If Using Internal Reference, Send This Command WREG CONFIG3 0xC0
-    /* tx_reg[0] = (ADS_WREG << 5 | (CONFIG3 & 0x1f)); */
+    /* // If Using Internal Reference, Send This Command WREG CONFIG3 0xC0 */
+    /* /\* tx_reg[0] = (ADS_WREG << 5 | (CONFIG3 & 0x1f)); *\/ */
+    /* /\* tx_reg[1] = 2; *\/ */
+    /* /\* tx_reg[2] = 0xC0; *\/ */
+    /* /\* NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__); *\/ */
+    /* /\* err_code = ads_send_command(tx_reg, 3, NULL, 0); *\/ */
+    /* /\* MY_ERROR_CHECK(err_code); *\/ */
+
+    /* // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86 */
+    /* tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f)); */
     /* tx_reg[1] = 2; */
-    /* tx_reg[2] = 0xC0; */
-    /* NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__); */
+    /* tx_reg[2] = 0x86; */
+    /* NRF_LOG_DEBUG("%s(%d) WREG CONFIG1 0x86.", __FILENAME__, __LINE__); */
+    /* err_code = ads_send_command(tx_reg, 3, NULL, 0); */
+    /* MY_ERROR_CHECK(err_code); */
+    /* // WREG CONFIG2 0x10 */
+    /* tx_reg[0] = (ADS_WREG << 5 | (CONFIG2 & 0x1f)); */
+    /* tx_reg[1] = 3; */
+    /* tx_reg[2] = 0x10; */
+    /* NRF_LOG_DEBUG("%s(%d) WREG CONFIG2 0x10.", __FILENAME__, __LINE__); */
     /* err_code = ads_send_command(tx_reg, 3, NULL, 0); */
     /* MY_ERROR_CHECK(err_code); */
 
-    // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
-    tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x86;
-    NRF_LOG_DEBUG("%s(%d) WREG CONFIG1 0x86.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    // WREG CONFIG2 0x10
-    tx_reg[0] = (ADS_WREG << 5 | (CONFIG2 & 0x1f));
-    tx_reg[1] = 3;
-    tx_reg[2] = 0x10;
-    NRF_LOG_DEBUG("%s(%d) WREG CONFIG2 0x10.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-
-    err_code = ads_set_channel_x(CHANNEL_SETTING_NOICE_SQUARE);
+    /* err_code = ads_set_channel_x(CHANNEL_SETTING_NOICE_SQUARE); */
     
-    /* // Put the Device Back in RDATA Mode */
-    MY_ERROR_CHECK(err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0));
+    /* /\* // Put the Device Back in RDATA Mode *\/ */
+    /* MY_ERROR_CHECK(err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0)); */
 
-    // Activate Conversion
-    // After This Point !DRDY Should Toggle at
-    // fclk /4096
-    MY_ERROR_CHECK(err_code = ads_send_command(&ADS_START, 1, NULL, 0));
+    /* // Activate Conversion */
+    /* // After This Point !DRDY Should Toggle at */
+    /* // fclk /4096 */
+    /* MY_ERROR_CHECK(err_code = ads_send_command(&ADS_START, 1, NULL, 0)); */
 
-    // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
-    MY_ERROR_CHECK(err_code);
+    /* // SDATAC Command so Registers can be Written */
+    /* NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__); */
+    /* err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN); */
+    /* MY_ERROR_CHECK(err_code); */
 
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[9], rx_buf[10], rx_buf[11]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[12], rx_buf[13], rx_buf[14]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[15], rx_buf[16], rx_buf[17]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[18], rx_buf[19], rx_buf[20]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]);
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[9], rx_buf[10], rx_buf[11]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[12], rx_buf[13], rx_buf[14]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[15], rx_buf[16], rx_buf[17]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[18], rx_buf[19], rx_buf[20]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]); */
+    /* NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]); */
 
     NRF_LOG_DEBUG("End of Hello World");
 
