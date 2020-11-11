@@ -1082,22 +1082,19 @@ int main(void)
 				    0, 0, 0,
 				    0, 0, 0,
 				    0, 0, 0,
-				    0, 0, 0};
+				    0, 0, 0 };
 
     err_code = ads_set_config(0xA0, 0x00);
 
-    err_code = ads_set_channel_x(INPUT_SHORTED);
+    err_code = ads_set_channel_x(DEVICE_NOISE_MEASUREMENTS);
 
     for (;;)
     {
 	idle_state_handle();
-
-//        err_code = ads_read_basic_data(rx_buf);
 	err_code = ads_start_measurerment(rx_buf);
         MY_ERROR_LOG(err_code);
         emg_buf[0] = rx_buf[0]; // Device ID
         emg_buf[1] = rx_buf[1]; // Packet length
-//                   rx_buf[2]; // Status byte
         emg_buf[2] = rx_buf[3]; // Channel 1
         emg_buf[3] = rx_buf[4];
         emg_buf[4] = rx_buf[5];
@@ -1111,7 +1108,6 @@ int main(void)
         emg_buf[12] = rx_buf[13];
         emg_buf[13] = rx_buf[15];
 
-//	ads_print_rec_data(rx_buf);
 	bsp_board_led_invert(BSP_BOARD_LED_0);
    }
 }

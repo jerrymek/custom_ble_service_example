@@ -1437,13 +1437,13 @@
 #define SPI_MISO_PIN 28 // Connected from P0.28 to J3:13
 #endif
 #ifndef SPI_SS_PIN
-#define SPI_SS_PIN 29   // Connected from P0.29 to J3:7
+#define SPI_SS_PIN 29   // Connected from P0.29 to J3:1
 #endif
 #ifndef SPI_DRDY_PIN
 #define SPI_DRDY_PIN 30 // Connected from P0.30 to J3:15
 #endif
 #ifndef ADS_RESET_PIN
-#define ADS_RESET_PIN 31 // Connected from P0.30 to J3:8
+#define ADS_RESET_PIN 31 // Connected from P0.31 to J3:8
 #endif
 
 // <o> SPI_IRQ_PRIORITY  - Interrupt priority

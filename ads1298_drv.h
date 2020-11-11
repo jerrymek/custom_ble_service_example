@@ -6,6 +6,21 @@
 #ifndef _ADS1298_DRV_H_
 #define _ADS1298_DRV_H_
 
+#define NUMBER_OF_CHANNELS (8)
+#define REC_BUF_LEN 27     // status 3 bytes + (8 channels * 3 bytes)
+
+typedef enum
+{
+    NORMAL_ELECTRODE_INPUT = 0x0,
+    DEVICE_NOISE_MEASUREMENTS,
+    RLD_MEASUREMENTS,
+    SUPPLY_MEASUREMENT,
+    TEMPERATURE_SENSOR,
+    TEST_SIGNAL,
+    RLD_DRP,
+    RLD_DRN
+}  channel_input_e;
+
 ret_code_t ads_init_spi(void);
 ret_code_t ads_read_ID(void);
 ret_code_t ads_hello_world (void);
@@ -25,17 +40,10 @@ ret_code_t ads_write_registers (uint8_t start,
 ret_code_t ads_setting_the_device (void);
 ret_code_t ads_read_basic_data(uint8_t *rx_buf);
 ret_code_t ads_capture_ADC_data(uint8_t *rx_buf);
-ret_code_t ads_set_channel_x(uint8_t chan_set);
+ret_code_t ads_set_channel_x(channel_input_e chan_set);
 ret_code_t ads_set_config(uint8_t config1_settings,
 			  uint8_t config2_settings);
 ret_code_t ads_start_measurerment(uint8_t *rx_buf);
 void ads_print_rec_data(uint8_t *rx_buf);
-
-#define NUMBER_OF_CHANNELS (8)
-#define REC_BUF_LEN 27     // status 3 bytes + (8 channels * 3 bytes)
-
-#define INPUT_SHORTED 0x1
-#define TEST_SIGNAL   0x5
-
 
 #endif // EOF- ads1298_drv.h

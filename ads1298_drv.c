@@ -145,16 +145,16 @@ ret_code_t ads_send_command(uint8_t *tx_buf, uint8_t tx_len, uint8_t *rx_buf, ui
     {
         __WFE();
     }
+    nrf_gpio_pin_set(SPI_SS_PIN);
     if (rx_len > 0)
     {
-	printf("%d, ", rx_len);
+        printf("%d, ", rx_len);
 	for (uint8_t i = 0; i < rx_len; i++)
 	{
 	    printf("%02x", rx_buf[i]);
 	}
 	printf("\n");
     }
-    nrf_gpio_pin_set(SPI_SS_PIN);
     return err_code;
 }
 
@@ -237,7 +237,7 @@ ret_code_t ads_read_ID(void)
     return err_code;
 }
 
-ret_code_t ads_set_channel_x(uint8_t chan_set)
+ret_code_t ads_set_channel_x(channel_input_e chan_set)
 {
     ret_code_t err_code = GENERAL_FAILURE;
     uint8_t tx_reg[3] = { 0, 0, 0 };
@@ -312,10 +312,11 @@ ret_code_t ads_start_measurerment(uint8_t *rx_buf)
     err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0);
     MY_ERROR_CHECK(err_code);
 
-    while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
+ //   while (nrf_gpio_pin_read(SPI_DRDY_PIN) != PIN_LOW);
 
     // SDATAC Command so Registers can be Written
     err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
+        printf("Test\n");
     MY_ERROR_CHECK(err_code);
 
     return err_code;
@@ -352,7 +353,7 @@ ret_code_t ads_hello_world(void)
 
     err_code = ads_set_config(0xA0, 0x00);
     
-    err_code = ads_set_channel_x(INPUT_SHORTED);
+    err_code = ads_set_channel_x(DEVICE_NOISE_MEASUREMENTS); // Device Noise Measurements
 
     err_code = ads_start_measurerment(rx_buf);
 
@@ -375,11 +376,11 @@ ret_code_t ads_hello_world(void)
     err_code = ads_send_command(tx_reg, 3, NULL, 0);
     MY_ERROR_CHECK(err_code);
     
-    err_code = ads_set_channel_x(TEST_SIGNAL);
+    err_code = ads_set_channel_x(DEVICE_NOISE_MEASUREMENTS);
 
     err_code = ads_start_measurerment(rx_buf);
 
-//    ads_print_rec_data(rx_buf);
+    ads_print_rec_data(rx_buf);
 
     NRF_LOG_DEBUG("End of Hello World");
 
@@ -393,7 +394,7 @@ ret_code_t ads_capture_ADC_data(uint8_t *rx_buf)
 
     err_code = ads_set_config(0xA0, 0x00);
 
-    err_code = ads_set_channel_x(INPUT_SHORTED);
+    err_code = ads_set_channel_x(DEVICE_NOISE_MEASUREMENTS);
 
     err_code = ads_start_measurerment(rx_buf);
 
@@ -409,7 +410,7 @@ ret_code_t ads_read_basic_data(uint8_t *rx_buf)
 
     err_code = ads_set_config(0xA0, 0x00);
 
-    err_code = ads_set_channel_x(INPUT_SHORTED);
+    err_code = ads_set_channel_x(DEVICE_NOISE_MEASUREMENTS);
 
     err_code = ads_start_measurerment(rx_buf);
 
