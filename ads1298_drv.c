@@ -88,17 +88,13 @@ uint8_t ADS_RDATA   = (0x12); // Read data by command. supports multiple read ba
 #define PIN_LOW     (0x0)
 #define PIN_HIGH    (0x1)
 
-#define NUMBER_OF_CHANNELS (8)
-#define REC_BUF_LEN 27     // status 3 bytes + (8 channels * 3 bytes)
+#define NUMBER_OF_CHANNELS (4)
+#define REC_BUF_LEN        (15)     // status 3 bytes + (4 channels * 3 bytes)
 uint8_t rx_buf[REC_BUF_LEN] = { 0, 0, 0,
 				0, 0, 0,
 				0, 0, 0,
 				0, 0, 0,
-				0, 0, 0,
-				0, 0, 0,
-				0, 0, 0,
-				0, 0, 0,
-			        0, 0, 0};
+				0, 0, 0 };
 
 //!< SPI instance index.
 #define SPI_INSTANCE (0)
@@ -134,7 +130,6 @@ void spi_event_handler(nrf_drv_spi_evt_t const * p_event,
                        void *                    p_context)
 {
     spi_xfer_done = true;
-//    NRF_LOG_DEBUG("%s(%d) Transfer completed.", __FILENAME__, __LINE__);
 }
 
 #define GENERAL_FAILURE 0xffff  // Todo: no code for initiating err_code to unsuccessful.
