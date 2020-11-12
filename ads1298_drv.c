@@ -210,15 +210,18 @@ ret_code_t ads_init_spi(void)
     ret_code_t err_code = GENERAL_FAILURE;
     nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DEFAULT_CONFIG;
 
-    nrf_gpio_cfg_output(SPI_SS_PIN);                       // Configure Slave Select pin.
+    nrf_gpio_cfg_output(SPI_SS_PIN);                       // Configure Slave Select pin (CS).
     nrf_gpio_cfg_input(SPI_DRDY_PIN, NRF_GPIO_PIN_PULLUP); // Configure Data Ready pin.
-    nrf_gpio_cfg_output(ADS_RESET_PIN);                    // Configure ADS Reset Pin.
+    nrf_gpio_cfg_output(ADS_N_RESET_PIN);                  // Configure ADS Reset Pin.
+    nrf_gpio_cfg_output(ADS_N_PWDN_PIN);                   // Configure ADS Power Down Pin.
 
-    nrf_gpio_pin_set(ADS_RESET_PIN);    // 2) Set the RESET pin high
+    nrf_delay_ms(100);
+    nrf_gpio_pin_set(ADS_N_RESET_PIN);    // 2) Set the RESET pin high
+    nrf_gpio_pin_set(ADS_N_PWDN_PIN);
     nrf_delay_ms(100);                  // 3) Wait after powerup until reset
-    nrf_gpio_pin_clear(ADS_RESET_PIN);  // 4) Set RESET pin low for a minimum of 2 * tCLK
+    nrf_gpio_pin_clear(ADS_N_RESET_PIN);  // 4) Set RESET pin low for a minimum of 2 * tCLK
     nrf_delay_ms(10);                   // 5) wait > 2 * tCLK
-    nrf_gpio_pin_set(ADS_RESET_PIN);    // 6) Setting RESET pin high now enables the digital portion of the ADS1298
+    nrf_gpio_pin_set(ADS_N_RESET_PIN);    // 6) Setting RESET pin high now enables the digital portion of the ADS1298
     nrf_delay_ms(2500);                 // 7) Wait > 18 * tCLK Before starting to use the device
     NRF_LOG_DEBUG("%s(%d) Reset of ADS1298 done.",
 		  __FILENAME__, __LINE__);
@@ -232,6 +235,8 @@ ret_code_t ads_init_spi(void)
     spi_config.mode      = NRF_DRV_SPI_MODE_1;
     err_code = nrf_drv_spi_init(&spi, &spi_config, spi_event_handler, NULL);
     MY_ERROR_CHECK(err_code);
+    NRF_LOG_DEBUG("%s(%d) SPI initialized.",
+		  __FILENAME__, __LINE__);
 
     return err_code;
 }
@@ -326,7 +331,9 @@ ret_code_t ads_hello_world(void)
     tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f));
     tx_reg[1] = 0;
     tx_reg[2] = ( HIGH_RESOLUTION +
-		  OSCILLATOR1_EN );
+		  OSCILLATOR1_EN  +
+		  OUTP_DATA_RATE2 +
+		  OUTP_DATA_RATE1 );
     NRF_LOG_DEBUG("%s(%d) 0x%02x, 0x%02x, 0x%02x",
 		  __FILENAME__, __LINE__,
 		  tx_reg[0], tx_reg[1], tx_reg[2] );
