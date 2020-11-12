@@ -69,6 +69,13 @@
 #define BLE_ADVERTISING_ENABLED 1
 #endif
 
+// <q> BLE_DB_DISCOVERY_ENABLED  - ble_db_discovery - Database discovery module
+ 
+
+#ifndef BLE_DB_DISCOVERY_ENABLED
+#define BLE_DB_DISCOVERY_ENABLED 1
+#endif
+
 // <q> BLE_DTM_ENABLED  - ble_dtm - Module for testing RF/PHY using DTM commands
  
 
@@ -200,7 +207,7 @@
 // <e> BLE_BAS_ENABLED - ble_bas - Battery Service
 //==========================================================
 #ifndef BLE_BAS_ENABLED
-#define BLE_BAS_ENABLED 0
+#define BLE_BAS_ENABLED 1
 #endif
 // <e> BLE_BAS_CONFIG_LOG_ENABLED - Enables logging in the module.
 //==========================================================
@@ -315,13 +322,13 @@
  
 
 #ifndef BLE_IAS_C_ENABLED
-#define BLE_IAS_C_ENABLED 0
+#define BLE_IAS_C_ENABLED 1
 #endif
 
 // <e> BLE_IAS_ENABLED - ble_ias - Immediate Alert Service
 //==========================================================
 #ifndef BLE_IAS_ENABLED
-#define BLE_IAS_ENABLED 0
+#define BLE_IAS_ENABLED 1
 #endif
 // <e> BLE_IAS_CONFIG_LOG_ENABLED - Enables logging in the module.
 //==========================================================
@@ -394,7 +401,7 @@
  
 
 #ifndef BLE_LLS_ENABLED
-#define BLE_LLS_ENABLED 0
+#define BLE_LLS_ENABLED 1
 #endif
 
 // <q> BLE_NUS_C_ENABLED  - ble_nus_c - Nordic UART Central Service
@@ -480,7 +487,7 @@
  
 
 #ifndef BLE_TPS_ENABLED
-#define BLE_TPS_ENABLED 0
+#define BLE_TPS_ENABLED 1
 #endif
 
 // </h> 
@@ -3348,7 +3355,7 @@
 // <e> NRFX_SAADC_ENABLED - nrfx_saadc - SAADC peripheral driver
 //==========================================================
 #ifndef NRFX_SAADC_ENABLED
-#define NRFX_SAADC_ENABLED 0
+#define NRFX_SAADC_ENABLED 1
 #endif
 // <o> NRFX_SAADC_CONFIG_RESOLUTION  - Resolution
  
@@ -5291,7 +5298,7 @@
 // <e> SAADC_ENABLED - nrf_drv_saadc - SAADC peripheral driver - legacy layer
 //==========================================================
 #ifndef SAADC_ENABLED
-#define SAADC_ENABLED 0
+#define SAADC_ENABLED 1
 #endif
 // <o> SAADC_CONFIG_RESOLUTION  - Resolution
  
@@ -12406,12 +12413,12 @@
 // <2=> NRF_CLOCK_LF_SRC_SYNTH 
 
 #ifndef NRF_SDH_CLOCK_LF_SRC
-#define NRF_SDH_CLOCK_LF_SRC 1
+#define NRF_SDH_CLOCK_LF_SRC 0 //1
 #endif
 
 // <o> NRF_SDH_CLOCK_LF_RC_CTIV - SoftDevice calibration timer interval. 
 #ifndef NRF_SDH_CLOCK_LF_RC_CTIV
-#define NRF_SDH_CLOCK_LF_RC_CTIV 0
+#define NRF_SDH_CLOCK_LF_RC_CTIV 16 //0
 #endif
 
 // <o> NRF_SDH_CLOCK_LF_RC_TEMP_CTIV - SoftDevice calibration timer interval under constant temperature. 
@@ -12438,7 +12445,7 @@
 // <11=> NRF_CLOCK_LF_ACCURACY_1_PPM 
 
 #ifndef NRF_SDH_CLOCK_LF_ACCURACY
-#define NRF_SDH_CLOCK_LF_ACCURACY 7
+#define NRF_SDH_CLOCK_LF_ACCURACY 1
 #endif
 
 // </h> 
