@@ -1068,11 +1068,12 @@ int main(void)
     advertising_start(erase_bonds);
 
 //    (void)ads_read_ID();
-    (void)ads_hello_world();
+//    (void)ads_hello_world();
    
     for (;;)
     {
 	idle_state_handle();
+        (void)ads_hello_world();
 
         /* bsp_board_led_invert(BSP_BOARD_LED_0); */
 	nrf_gpio_pin_toggle(SPI_SS_PIN);     // SPI chip select; active low

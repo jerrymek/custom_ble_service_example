@@ -30,9 +30,37 @@
  * @brief Register Map
  */
 #define ADS_ID     0x0
-#define CONFIG1    0x1 // 06 HR DAISY_EN CLK_EN 0 0 DR2 DR1 DR0
-#define CONFIG2    0x2 // 40 0 0 WCT_CHOP INT_TEST 0 TEST_AMP TEST_FREQ1 TEST_FREQ0 RLD_LOFF_
-#define CONFIG3    0x3 // 40 PD_REFBUF 1 VREF_4V RLD_MEAS RLDREF_INT PD_RLD RLD_STAT SENS
+
+#define CONFIG1    0x1
+#define HIGH_RESOLUTION 0x80
+#define DAISY_CHAIN_EN  0x40
+#define OSCILLATOR1_EN  0x20 // Used together with JP18 2-3 and JP19 1-2
+#define RESERVED_0x10   0x10
+#define RESERVED_0x08   0x08
+#define OUTP_DATA_RATE2 0x04
+#define OUTP_DATA_RATE1 0x02
+#define OUTP_DATA_RATE0 0x01
+
+#define CONFIG2    0x2
+#define RESERVED_0x80   0x80
+#define RESERVED_0x40   0x40
+#define WCT_CHOPPING_SC 0x20
+#define INT_TEST_SOURCE 0x10 // 0=Internal, 1=External Test signals
+#define RESERVED_0x04   0x08
+#define TEST_AMPLITUDE  0x04
+#define TEST_FREQUENCY1 0x02
+#define TEST_FREQUENCY0 0x01
+
+#define CONFIG3    0x3 //
+#define INT_REF_BUF_EN  0x80
+#define ALWAYS_HI_0x40  0x40 // Always write bit high.
+#define VREF_4V         0x20
+#define RLD_MEAS        0x10
+#define RLDREF_INT      0x08
+#define PD_RLD          0x04
+#define RLD_LOFF_SENS   0x02
+#define RLD_NOT_CONN    0x01
+
 #define VLEAD_OFF_ 0x4 // LOFF 00 COMP_TH2 COMP_TH1 COMP_TH0 ILEAD_OFF1 ILEAD_OFF0 FLEAD_OFF1 FLEAD_OFF0 EN
 // CHANNEL-SPECIFIC SETTINGS
 #define CH1SET 0x5 // 00 PD1 GAIN12 GAIN11 GAIN10 0 MUX12 MUX11 MUX10
@@ -43,6 +71,20 @@
 #define CH6SET 0xA // (1) 00 PD6 GAIN62 GAIN61 GAIN60 0 MUX62 MUX61 MUX60
 #define CH7SET 0xB // (1) 00 PD7 GAIN72 GAIN71 GAIN70 0 MUX72 MUX71 MUX70
 #define CH8SET 0xC // (1) 00 PD8 GAIN82 GAIN81 GAIN80 0 MUX82 MUX81 MUX80
+#define POWER_DOWN      0x80 // 0=Normal operation, 1=Power down
+#define PGA_GAIN_2      0x40
+#define PGA_GAIN_1      0x20
+#define PGA_GAIN_0      0x10
+#define RESERVED_0x04   0x08
+#define NORMAL_ELECTRODE_INPUT 0x0
+#define INPUT_SHORTED          0x1
+#define RLD_MEAS_BIT_FOR_RLD   0x2
+#define MVDD_FOR_SUPPLY_MEAS   0x3
+#define TEMPERATURE_SENSOR     0x4
+#define TEST_SIGNAL            0x5
+#define POSITIVE_ELECTRODE     0x6
+#define NEGATIVE_ELECTRODE     0x7
+
 #define RLD_SENSP 0xD // (2) 00 RLD8P(1) RLD7P(1) RLD6P(1) RLD5P(1) RLD4P RLD3P RLD2P RLD1P
 #define RLD_SENSN 0xE // (2) 00 RLD8N(1) RLD7N(1) RLD6N(1) RLD5N(1) RLD4N RLD3N RLD2N RLD1N
 #define LOFF_SENSP 0xF // (2) 00 LOFF8P LOFF7P LOFF6P LOFF5P LOFF4P LOFF3P LOFF2P LOFF1P
@@ -167,7 +209,7 @@ ret_code_t ads_init_spi(void)
 {
     ret_code_t err_code = GENERAL_FAILURE;
     nrf_drv_spi_config_t spi_config = NRF_DRV_SPI_DEFAULT_CONFIG;
- 
+
     nrf_gpio_cfg_output(SPI_SS_PIN);                       // Configure Slave Select pin.
     nrf_gpio_cfg_input(SPI_DRDY_PIN, NRF_GPIO_PIN_PULLUP); // Configure Data Ready pin.
     nrf_gpio_cfg_output(ADS_RESET_PIN);                    // Configure ADS Reset Pin.
@@ -235,24 +277,23 @@ ret_code_t ads_read_ID(void)
     return err_code;
 }
 
-#define CHANNEL_SETTING_NOICE        0x1
-#define CHANNEL_SETTING_NOICE_SQUARE 0x5
 ret_code_t ads_set_channel_x(uint8_t chan_set)
 {
     ret_code_t err_code = GENERAL_FAILURE;
     uint8_t tx_reg[3] = { 0, 0, 0 };
 
-    for (int i = 0; i < NUMBER_OF_CHANNELS; i++)
+    for (int i = CH1SET; i <= CH8SET; i++)
     {
 	// Set All Channels to Input Short WREG CHnSET chan_set
-	tx_reg[0] = (ADS_WREG << 5 | ((i + 1) & 0x1f));
+	tx_reg[0] = (ADS_WREG << 5 | ((i) & 0x1f));
 	tx_reg[1] = 0;
 	tx_reg[2] = chan_set;
+	NRF_LOG_DEBUG("%s(%d) 0x%x 0x%x 0x%x",
+		      __FILENAME__, __LINE__,
+		      tx_reg[0], tx_reg[1], tx_reg[2]);
 	err_code = ads_send_command(tx_reg, 3, NULL, 0);
 	MY_ERROR_CHECK(err_code);
     }
-    NRF_LOG_DEBUG("%s(%d) WREG CHnSET 0x%x 0x%x 0x%x for all eight channels",
-		  __FILENAME__, __LINE__, tx_reg[0], tx_reg[1], tx_reg[2]);
 
     return err_code;
 }
@@ -266,46 +307,58 @@ ret_code_t ads_hello_world(void)
 
     // Device Wakes Up in RDATAC Mode, so Send
     // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    NRF_LOG_DEBUG("%s(%d) 0x%02x",
+		  __FILENAME__, __LINE__, ADS_SDATAC);
     MY_ERROR_CHECK(ads_send_command(&ADS_SDATAC, 1, NULL, 0));
 
     // If Using Internal Reference, Send This Command WREG CONFIG3 0xC0
     /* tx_reg[0] = (ADS_WREG << 5 | (CONFIG3 & 0x1f)); */
-    /* tx_reg[1] = 2; */
-    /* tx_reg[2] = 0xC0; */
-    /* NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__); */
+    /* tx_reg[1] = 0; */
+    /* tx_reg[2] = ( INT_REF_BUF_EN + */
+    /*               ALWAYS_HI_0x40 ); */
+    /* NRF_LOG_DEBUG("%s(%d) 0x%02x, 0x%02x, 0x%02x", */
+    /*               __FILENAME__, __LINE__, */
+    /*               tx_reg[0], tx_reg[1], tx_reg[2] ); */
     /* err_code = ads_send_command(tx_reg, 3, NULL, 0); */
     /* MY_ERROR_CHECK(err_code); */
 
     // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
     tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x80;
-    NRF_LOG_DEBUG("%s(%d) WREG CONFIG1 0x86.", __FILENAME__, __LINE__);
+    tx_reg[1] = 0;
+    tx_reg[2] = ( HIGH_RESOLUTION +
+		  OSCILLATOR1_EN );
+    NRF_LOG_DEBUG("%s(%d) 0x%02x, 0x%02x, 0x%02x",
+		  __FILENAME__, __LINE__,
+		  tx_reg[0], tx_reg[1], tx_reg[2] );
     err_code = ads_send_command(tx_reg, 3, NULL, 0);
     MY_ERROR_CHECK(err_code);
     // WREG CONFIG2 0x00
     tx_reg[0] = (ADS_WREG << 5 | (CONFIG2 & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x00;
-    NRF_LOG_DEBUG("%s(%d) WREG CONFIG2 0x00.", __FILENAME__, __LINE__);
+    tx_reg[1] = 0;
+    tx_reg[2] = ( 0x00 );
+    NRF_LOG_DEBUG("%s(%d) 0x%02x, 0x%02x, 0x%02x",
+		  __FILENAME__, __LINE__,
+		  tx_reg[0], tx_reg[1], tx_reg[2] );
     err_code = ads_send_command(tx_reg, 3, NULL, 0);
     MY_ERROR_CHECK(err_code);
 
-    err_code = ads_set_channel_x(CHANNEL_SETTING_NOICE);
+    err_code = ads_set_channel_x( INPUT_SHORTED );
 
     // Start Conversion
     // After This Point !DRDY Should Toggle at
     // fclk /4096
-    NRF_LOG_DEBUG("%s(%d) ADS_START.", __FILENAME__, __LINE__);
+    NRF_LOG_DEBUG("%s(%d) 0x%02x",
+		  __FILENAME__, __LINE__, ADS_START);
     err_code = ads_send_command(&ADS_START, 1, NULL, 0);
 
     // Put the Device Back in RDATA Mode
-    NRF_LOG_DEBUG("%s(%d) RDATAC.", __FILENAME__, __LINE__);
+    NRF_LOG_DEBUG("%s(%d) 0x%02x",
+		  __FILENAME__, __LINE__, ADS_RDATAC);
     err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0);
 
     // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    NRF_LOG_DEBUG("%s(%d) 0x%02x",
+		  __FILENAME__, __LINE__, ADS_SDATAC);
     err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
     MY_ERROR_CHECK(err_code);
 
@@ -321,63 +374,63 @@ ret_code_t ads_hello_world(void)
 
  /* ---- */
 
-    NRF_LOG_DEBUG("%s(%d) ADS_RESET.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&ADS_RESET, 1, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    //NRF_LOG_DEBUG("%s(%d) ADS_RESET.", __FILENAME__, __LINE__);
+    //err_code = ads_send_command(&ADS_RESET, 1, NULL, 0);
+    //MY_ERROR_CHECK(err_code);
 
-    // Device Wakes Up in RDATAC Mode, so Send
-    // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&ADS_SDATAC, 1, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    //// Device Wakes Up in RDATAC Mode, so Send
+    //// SDATAC Command so Registers can be Written
+    //NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    //err_code = ads_send_command(&ADS_SDATAC, 1, NULL, 0);
+    //MY_ERROR_CHECK(err_code);
 
-    // If Using Internal Reference, Send This Command WREG CONFIG3 0xC0
-    /* tx_reg[0] = (ADS_WREG << 5 | (CONFIG3 & 0x1f)); */
-    /* tx_reg[1] = 2; */
-    /* tx_reg[2] = 0xC0; */
-    /* NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__); */
-    /* err_code = ads_send_command(tx_reg, 3, NULL, 0); */
-    /* MY_ERROR_CHECK(err_code); */
+    //// If Using Internal Reference, Send This Command WREG CONFIG3 0xC0
+    ///* tx_reg[0] = (ADS_WREG << 5 | (CONFIG3 & 0x1f)); */
+    ///* tx_reg[1] = 2; */
+    ///* tx_reg[2] = 0xC0; */
+    ///* NRF_LOG_DEBUG("%s(%d) WREG CONFIG3 0xC0.", __FILENAME__, __LINE__); */
+    ///* err_code = ads_send_command(tx_reg, 3, NULL, 0); */
+    ///* MY_ERROR_CHECK(err_code); */
 
-    // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
-    tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f));
-    tx_reg[1] = 2;
-    tx_reg[2] = 0x86;
-    NRF_LOG_DEBUG("%s(%d) WREG CONFIG1 0x86.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-    // WREG CONFIG2 0x10
-    tx_reg[0] = (ADS_WREG << 5 | (CONFIG2 & 0x1f));
-    tx_reg[1] = 3;
-    tx_reg[2] = 0x10;
-    NRF_LOG_DEBUG("%s(%d) WREG CONFIG2 0x10.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(tx_reg, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
+    //// Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
+    //tx_reg[0] = (ADS_WREG << 5 | (CONFIG1 & 0x1f));
+    //tx_reg[1] = 2;
+    //tx_reg[2] = 0x86;
+    //NRF_LOG_DEBUG("%s(%d) WREG CONFIG1 0x86.", __FILENAME__, __LINE__);
+    //err_code = ads_send_command(tx_reg, 3, NULL, 0);
+    //MY_ERROR_CHECK(err_code);
+    //// WREG CONFIG2 0x10
+    //tx_reg[0] = (ADS_WREG << 5 | (CONFIG2 & 0x1f));
+    //tx_reg[1] = 3;
+    //tx_reg[2] = 0x10;
+    //NRF_LOG_DEBUG("%s(%d) WREG CONFIG2 0x10.", __FILENAME__, __LINE__);
+    //err_code = ads_send_command(tx_reg, 3, NULL, 0);
+    //MY_ERROR_CHECK(err_code);
 
-    err_code = ads_set_channel_x(CHANNEL_SETTING_NOICE_SQUARE);
+    //err_code = ads_set_channel_x(TEST_SIGNAL);
     
-    /* // Put the Device Back in RDATA Mode */
-    MY_ERROR_CHECK(err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0));
+    ///* // Put the Device Back in RDATA Mode */
+    //MY_ERROR_CHECK(err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0));
 
-    // Activate Conversion
-    // After This Point !DRDY Should Toggle at
-    // fclk /4096
-    MY_ERROR_CHECK(err_code = ads_send_command(&ADS_START, 1, NULL, 0));
+    //// Activate Conversion
+    //// After This Point !DRDY Should Toggle at
+    //// fclk /4096
+    //MY_ERROR_CHECK(err_code = ads_send_command(&ADS_START, 1, NULL, 0));
 
-    // SDATAC Command so Registers can be Written
-    NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
-    err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
-    MY_ERROR_CHECK(err_code);
+    //// SDATAC Command so Registers can be Written
+    //NRF_LOG_DEBUG("%s(%d) ADS_SDATAC.", __FILENAME__, __LINE__);
+    //err_code = ads_send_command(&ADS_SDATAC, 1, rx_buf, REC_BUF_LEN);
+    //MY_ERROR_CHECK(err_code);
 
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[9], rx_buf[10], rx_buf[11]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[12], rx_buf[13], rx_buf[14]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[15], rx_buf[16], rx_buf[17]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[18], rx_buf[19], rx_buf[20]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]);
-    NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[0], rx_buf[1], rx_buf[2]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[3], rx_buf[4], rx_buf[5]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[6], rx_buf[7], rx_buf[8]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[9], rx_buf[10], rx_buf[11]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[12], rx_buf[13], rx_buf[14]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[15], rx_buf[16], rx_buf[17]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[18], rx_buf[19], rx_buf[20]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]);
+    //NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]);
 
     NRF_LOG_DEBUG("End of Hello World");
 
