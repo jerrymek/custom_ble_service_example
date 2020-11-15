@@ -1070,11 +1070,12 @@ int main(void)
     ads_init_spi();
     ads_power_up_sequence();
     (void)ads_hello_world();
-   
+    ads_configure_shorted_input_measurment();
+ 
     for (;;)
     {
 	idle_state_handle();
-//        (void)ads_hello_world();
+	ads_read_adc_data();
         bsp_board_led_invert(BSP_BOARD_LED_0);
   }
 }
