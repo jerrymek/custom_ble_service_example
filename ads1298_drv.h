@@ -6,8 +6,10 @@
 #ifndef _ADS1298_DRV_H_
 #define _ADS1298_DRV_H_
 
-ret_code_t ads_init_spi(void);
-ret_code_t ads_read_ID(void);
+void ads_init_gpio_pins(void);
+void ads_power_up_sequence(void);
+void ads_init_spi(void);
+uint8_t ads_read_ID(uint8_t expected_ID);
 ret_code_t ads_hello_world (void);
 ret_code_t ads_wakeup (void);
 ret_code_t ads_standby (void);

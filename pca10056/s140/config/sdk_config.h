@@ -1428,25 +1428,25 @@
 
 //==========================================================
 #ifndef ADS_PWDN_PIN
-#define ADS_N_PWDN_PIN 2 // Connected from P0.2 to J5:5
+#define ADS_N_PWDN_PIN   2 // Connected from P0.2 to J5:5
 #endif
 #ifndef SPI_SCK_PIN
-#define SPI_SCK_PIN 3   // Connected from P0.3 to J3:3
+#define SPI_SCK_PIN      3 // to J3:3
 #endif
 #ifndef SPI_MOSI_PIN
-#define SPI_MOSI_PIN 4  // Connected from P0.4 to J3:11
+#define SPI_MOSI_PIN     4 // to J3:11 (SPI_IN)
 #endif
 #ifndef SPI_MISO_PIN
-#define SPI_MISO_PIN 28 // Connected from P0.28 to J3:13
+#define SPI_MISO_PIN    28 // to J3:13 (SPI_OUT)
 #endif
-#ifndef SPI_SS_PIN
-#define SPI_SS_PIN 29   // Connected from P0.29 to J3:7
+#ifndef SPI_N_CS_PIN
+#define SPI_N_CS_PIN    29 // to J3:1
 #endif
 #ifndef SPI_DRDY_PIN
-#define SPI_DRDY_PIN 30 // Connected from P0.30 to J3:15
+#define SPI_DRDY_PIN    30 // to J3:15
 #endif
 #ifndef ADS_RESET_PIN
-#define ADS_N_RESET_PIN 31 // Connected from P0.30 to J3:8
+#define ADS_N_RESET_PIN 31 // Connected from P0.31 to J3:8
 #endif
 
 // <o> SPI_IRQ_PRIORITY  - Interrupt priority

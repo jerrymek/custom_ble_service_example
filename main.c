@@ -1057,7 +1057,6 @@ int main(void)
     peer_manager_init();
 
     bsp_board_init(BSP_INIT_LEDS);
-    (void)ads_init_spi();
     err_code = NRF_LOG_INIT(NULL);
     MY_ERROR_CHECK(err_code);
 
@@ -1067,17 +1066,17 @@ int main(void)
 
     advertising_start(erase_bonds);
 
-//    (void)ads_read_ID();
-//    (void)ads_hello_world();
+    ads_init_gpio_pins();
+    ads_init_spi();
+    ads_power_up_sequence();
+    (void)ads_hello_world();
    
     for (;;)
     {
 	idle_state_handle();
-        (void)ads_hello_world();
-
-        /* bsp_board_led_invert(BSP_BOARD_LED_0); */
-	nrf_gpio_pin_toggle(SPI_SS_PIN);     // SPI chip select; active low
-    }
+//        (void)ads_hello_world();
+        bsp_board_led_invert(BSP_BOARD_LED_0);
+  }
 }
 
 
