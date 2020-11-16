@@ -8,6 +8,7 @@
  * @description
  */
 #include <string.h>
+#include <math.h>
 #include "app_util_platform.h"
 #include "nrf_gpio.h"
 #include "nrf_delay.h"
@@ -364,6 +365,21 @@ ret_code_t ads_set_channel_x(uint8_t chan_set)
     return err_code;
 }
 
+void write_register (uint8_t reg, uint8_t settings)
+{
+    ret_code_t err_code = GENERAL_FAILURE;
+    uint8_t tx_buf[3] = { 0, 0, 0 };
+    // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
+    tx_buf[0] = (ADS_WREG | (reg & 0x1f));
+    tx_buf[1] = 2;
+    tx_buf[2] = settings;
+    NRF_LOG_DEBUG("%s(%d) 0x%02x, 0x%02x, 0x%02x",
+		  __FILENAME__, __LINE__,
+		  tx_buf[0], tx_buf[1], tx_buf[2] );
+    err_code = ads_send_command(tx_buf, 3, NULL, 0);
+    MY_ERROR_CHECK(err_code);
+}
+
 void ads_configure_shorted_input_measurment(void)
 {
     ret_code_t err_code = GENERAL_FAILURE;
@@ -377,29 +393,15 @@ void ads_configure_shorted_input_measurment(void)
 		  __FILENAME__, __LINE__, ADS_SDATAC);
     MY_ERROR_CHECK(ads_send_command(&ADS_SDATAC, 1, NULL, 0));
 
-    // Set Device in HR Mode and DR = f /1024 WREG CONFIG1 0x86
-    tx_buf[0] = (ADS_WREG | (CONFIG1 & 0x1f));
-    tx_buf[1] = 2;
-    tx_buf[2] = ( HIGH_RESOLUTION +
-		  OUTP_DATA_RATE2 +
-		  OUTP_DATA_RATE0 );
-    NRF_LOG_DEBUG("%s(%d) 0x%02x, 0x%02x, 0x%02x",
-		  __FILENAME__, __LINE__,
-		  tx_buf[0], tx_buf[1], tx_buf[2] );
-    err_code = ads_send_command(tx_buf, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-
-    // WREG CONFIG2 0x00
-    tx_buf[0] = (ADS_WREG | (CONFIG2 & 0x1f));
-    tx_buf[1] = 2;
-    tx_buf[2] = ( 0x00 );
-    NRF_LOG_DEBUG("%s(%d) 0x%02x, 0x%02x, 0x%02x",
-		  __FILENAME__, __LINE__,
-		  tx_buf[0], tx_buf[1], tx_buf[2] );
-    err_code = ads_send_command(tx_buf, 3, NULL, 0);
-    MY_ERROR_CHECK(err_code);
-
-    err_code = ads_set_channel_x( INPUT_SHORTED );
+    write_register (CONFIG1, 0x86);
+    write_register (CONFIG2, 0x10);
+    write_register (CONFIG3, 0xDC);
+    ads_set_channel_x( INPUT_SHORTED );
+    write_register (LOFF_SENSP, 0xff);
+    write_register (LOFF_SENSN, 0x02);
+    write_register (LOFF_STATP, 0xff);
+    write_register (LOFF_STATN, 0xff);
+    write_register (RESP, 0xf0);
 
     // Start Conversion
     // After This Point !DRDY Should Toggle at
@@ -414,6 +416,21 @@ void ads_configure_shorted_input_measurment(void)
     NRF_LOG_DEBUG("%s(%d) 0x%02x",
 		  __FILENAME__, __LINE__, ADS_RDATAC);
     err_code = ads_send_command(&ADS_RDATAC, 1, NULL, 0);
+}
+
+float convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
+{
+    int i = r1;
+    i = (i << 8) | r2;
+    i = (i << 8) | r3;
+    printf("0x%06x\n", i);
+
+    if (i & 0x800000)
+	i |= ~0xffffff;
+
+    const float Q = 1.0 / 0x7fffff;
+
+    return (i) * Q;
 }
 
 void ads_read_adc_data(void)
@@ -432,6 +449,25 @@ void ads_read_adc_data(void)
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[18], rx_buf[19], rx_buf[20]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[21], rx_buf[22], rx_buf[23]);
     NRF_LOG_DEBUG("0x%x, 0x%x, 0x%x", rx_buf[24], rx_buf[25], rx_buf[26]);
+    int32_t status = rx_buf[0]<<16 + rx_buf[1]<<8 + rx_buf[2];
+    float chan1  = 2.5/(pow(2,23)-1)*convert(rx_buf[3], rx_buf[4], rx_buf[5]);
+    float chan2  = 2.5/(pow(2,23)-1)*convert(rx_buf[6], rx_buf[7], rx_buf[8]);
+    float chan3  = 2.5/(pow(2,23)-1)*convert(rx_buf[9], rx_buf[10], rx_buf[11]);
+    float chan4  = 2.5/(pow(2,23)-1)*convert(rx_buf[12], rx_buf[13], rx_buf[14]);
+    float chan5  = 2.5/(pow(2,23)-1)*convert(rx_buf[15], rx_buf[16], rx_buf[17]);
+    float chan6  = 2.5/(pow(2,23)-1)*convert(rx_buf[18], rx_buf[19], rx_buf[20]);
+    float chan7  = 2.5/(pow(2,23)-1)*convert(rx_buf[21], rx_buf[22], rx_buf[23]);
+    float chan8  = 2.5/(pow(2,23)-1)*convert(rx_buf[24], rx_buf[25], rx_buf[26]);
+
+    printf("Status 0x%x\n", status);
+    printf("Channel 1 %0.0000000f\n", chan1);
+    printf("Channel 2 %0.0000000f\n", chan2);
+    printf("Channel 3 %0.0000000f\n", chan3);
+    printf("Channel 4 %0.0000000f\n", chan4);
+    printf("Channel 5 %0.0000000f\n", chan5);
+    printf("Channel 6 %0.0000000f\n", chan6);
+    printf("Channel 7 %0.0000000f\n", chan7);
+    printf("Channel 8 %0.0000000f\n", chan8);
 
     // Put the Device Back in RDATA Mode
     NRF_LOG_DEBUG("%s(%d) 0x%02x",

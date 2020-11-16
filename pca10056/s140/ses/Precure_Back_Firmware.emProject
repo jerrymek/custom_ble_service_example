@@ -26,7 +26,9 @@
       linker_output_format="hex"
       linker_printf_fmt_level="long"
       linker_printf_width_precision_supported="Yes"
+      linker_scanf_character_group_matching_enabled="Yes"
       linker_scanf_fmt_level="long"
+      linker_scanf_fp_enabled="Yes"
       linker_section_placement_file="flash_placement.xml"
       linker_section_placement_macros="FLASH_PH_START=0x0;FLASH_PH_SIZE=0x100000;RAM_PH_START=0x20000000;RAM_PH_SIZE=0x40000;FLASH_START=0x26000;FLASH_SIZE=0xd9000;RAM_START=0x20002270;RAM_SIZE=0xdde8"
       linker_section_placements_segments="FLASH RX 0x0 0x100000;RAM1 RWX 0x20000000 0x40000"
@@ -87,7 +89,9 @@
       <file file_name="$(SDK)/modules/nrfx/drivers/src/nrfx_power_clock.c" />
       <file file_name="$(SDK)/modules/nrfx/drivers/src/prs/nrfx_prs.c" />
       <file file_name="$(SDK)/modules/nrfx/drivers/src/nrfx_uart.c" />
-      <file file_name="$(SDK)/modules/nrfx/drivers/src/nrfx_uarte.c" />
+      <file file_name="$(SDK)/modules/nrfx/drivers/src/nrfx_uarte.c">
+        <configuration Name="Common" arm_fp_abi="Hard" />
+      </file>
       <file file_name="$(SDK)/modules/nrfx/drivers/src/nrfx_spi.c" />
     </folder>
     <folder Name="Board Support">
@@ -95,7 +99,9 @@
       <file file_name="$(SDK)/components/libraries/bsp/bsp_btn_ble.c" />
     </folder>
     <folder Name="Application">
-      <file file_name="../../../main.c" />
+      <file file_name="../../../main.c">
+        <configuration Name="Common" arm_use_builtins="Yes" />
+      </file>
       <file file_name="../config/sdk_config.h" />
       <file file_name="../../../our_service.c">
         <configuration

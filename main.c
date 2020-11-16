@@ -1069,7 +1069,7 @@ int main(void)
     ads_init_gpio_pins();
     ads_init_spi();
     ads_power_up_sequence();
-    (void)ads_hello_world();
+//    (void)ads_hello_world();
     ads_configure_shorted_input_measurment();
  
     for (;;)
