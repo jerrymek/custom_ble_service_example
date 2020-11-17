@@ -1377,7 +1377,7 @@
 //==========================================================
  
 // <0=> 0 (P0.0) 
-// <1=> 1 (P0.1) 
+// <1=> 1 (P0.1)
 // <2=> 2 (P0.2) 
 // <3=> 3 (P0.3)    SPI_SCK_PIN
 // <4=> 4 (P0.4)    SPI_MOSI_PIN
@@ -1400,10 +1400,10 @@
 // <21=> 21 (P0.21) 
 // <22=> 22 (P0.22) 
 // <23=> 23 (P0.23) 
-// <24=> 24 (P0.24) 
-// <25=> 25 (P0.25) 
-// <26=> 26 (P0.26) I2C_SDA_PIN
-// <27=> 27 (P0.27) I2C_SCL_PIN
+// <24=> 24 (P0.24) I2C_SDA2_PIN
+// <25=> 25 (P0.25) I2C_SCL2_PIN
+// <26=> 26 (P0.26) I2C_SDA1_PIN
+// <27=> 27 (P0.27) I2C_SCL1_PIN
 // <28=> 28 (P0.28) SPI_MISO_PIN
 // <29=> 29 (P0.29) SPI_SS_PIN
 // <30=> 30 (P0.30) SPI_DRDY_PIN
@@ -1435,6 +1435,18 @@
 #endif
 #ifndef SPI_MOSI_PIN
 #define SPI_MOSI_PIN     4 // to J3:11 (SPI_IN)
+#endif
+#ifndef I2C_SDA2_PIN
+#define I2C_SDA2_PIN    24 // (P0.24) I2C_SDA1_PIN
+#endif
+#ifndef I2C_SCL2_PIN
+#define I2C_SCL2_PIN    25 // (P0.25) I2C_SCL1_PIN
+#endif
+#ifndef I2C_SDA1_PIN
+#define I2C_SDA1_PIN    26 // (P0.26) I2C_SDA_PIN
+#endif
+#ifndef I2C_SCL1_PIN
+#define I2C_SCL1_PIN    27 // (P0.25) I2C_SCL1_PIN
 #endif
 #ifndef SPI_MISO_PIN
 #define SPI_MISO_PIN    28 // to J3:13 (SPI_OUT)

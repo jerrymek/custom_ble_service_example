@@ -121,7 +121,6 @@ uint8_t ADS_RDATA   = (0x12); // Read data by command. supports multiple read ba
 #define ADS_WREG    (0x40)  // Write n nnnn registers starting at address r rrrr.
                            // 010r rrrr 000n nnnn (2)
 
-#define GENERAL_FAILURE 0xffff  // Todo: no code for initiating err_code to unsuccessful.
 #define PIN_LOW     (0x0)
 #define PIN_HIGH    (0x1)
 

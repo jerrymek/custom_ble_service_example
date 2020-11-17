@@ -1,6 +1,7 @@
 #ifndef __LOG_SUPPORT_H__
 #define __LOG_SUPPORT_H__
 
+#define GENERAL_FAILURE 0xffff  // Todo: no code for initiating err_code to unsuccessful.
 #define __FILENAME__ (__builtin_strrchr(__FILE__, '/') ? __builtin_strrchr(__FILE__, '/') + 1 : __FILE__)
 
 /**
