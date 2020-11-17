@@ -172,14 +172,14 @@ typedef struct
 } ads_reg_byte1_t;
 
 uint32_t status = 0;
-float chan1  = 0.0;
-float chan2  = 0.0;
-float chan3  = 0.0;
-float chan4  = 0.0;
-float chan5  = 0.0;
-float chan6  = 0.0;
-float chan7  = 0.0;
-float chan8  = 0.0;
+int32_t chan1  = 0;
+int32_t chan2  = 0;
+int32_t chan3  = 0;
+int32_t chan4  = 0;
+int32_t chan5  = 0;
+int32_t chan6  = 0;
+int32_t chan7  = 0;
+int32_t chan8  = 0;
 
 void ads_get_channel_data(ads_emg_data *emg_data)
 {
@@ -416,6 +416,34 @@ void ads_start_conversion(void)
     MY_ERROR_CHECK(ads_send_command(&ADS_START, 1, NULL, 0));
 }
 
+void ads_configure_normal_input_measurment(void)
+{
+    ret_code_t err_code = GENERAL_FAILURE;
+    uint8_t tx_buf[3] = { 0, 0, 0 };
+ 
+    NRF_LOG_DEBUG("Start of Hello World");
+
+    // Send SDATAC Command so Registers can be Written
+    ads_set_SDATAC();
+
+    write_register (CONFIG1, 0x86);
+    write_register (CONFIG2, 0x10);
+    write_register (CONFIG3, 0xDC);
+    ads_set_channel_x( NORMAL_ELECTRODE_INPUT );
+    write_register (LOFF_SENSP, 0xff);
+    write_register (LOFF_SENSN, 0x02);
+    write_register (LOFF_STATP, 0xff);
+    write_register (LOFF_STATN, 0xff);
+    write_register (RESP, 0xf0);
+
+    ads_start_conversion();
+    
+    ads_read_all_regs();
+
+    // Put the Device Back in RDATA Mode
+    ads_set_RDATAC();
+}
+
 void ads_configure_shorted_input_measurment(void)
 {
     ret_code_t err_code = GENERAL_FAILURE;
@@ -444,9 +472,9 @@ void ads_configure_shorted_input_measurment(void)
     ads_set_RDATAC();
 }
 
-float convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
+int32_t convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
 {
-    int i = r1;
+    int32_t i = r1;
     i = (i << 8) | r2;
     i = (i << 8) | r3;
 // Todo:    NRF_LOG_DEBUG("0x%06x\n", i);
@@ -454,9 +482,9 @@ float convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
     if (i & 0x800000)
 	i |= ~0xffffff;
 
-    const float Q = 1.0 / 0x7fffff;
+//    const float Q = 1.0 / 0x7fffff;
 
-    return (i) * Q;
+    return (i); // * Q;
 }
 
 void ads_log_rx_buf(void)
@@ -479,17 +507,17 @@ void ads_read_adc_data(void)
 // Todo:    ads_log_rx_buf();
 
     status = rx_buf[0]<<16 + rx_buf[1]<<8 + rx_buf[2];
-    chan1  = convert(rx_buf[3], rx_buf[4], rx_buf[5])*100000;
-    chan2  = convert(rx_buf[6], rx_buf[7], rx_buf[8])*100000;
-    chan3  = convert(rx_buf[9], rx_buf[10], rx_buf[11])*100000;
-    chan4  = convert(rx_buf[12], rx_buf[13], rx_buf[14])*100000;
-    chan5  = convert(rx_buf[15], rx_buf[16], rx_buf[17])*100000;
-    chan6  = convert(rx_buf[18], rx_buf[19], rx_buf[20])*100000;
-    chan7  = convert(rx_buf[21], rx_buf[22], rx_buf[23])*100000;
-    chan8  = convert(rx_buf[24], rx_buf[25], rx_buf[26])*100000;
+    chan1  = convert(rx_buf[3], rx_buf[4], rx_buf[5]);
+    chan2  = convert(rx_buf[6], rx_buf[7], rx_buf[8]);
+    chan3  = convert(rx_buf[9], rx_buf[10], rx_buf[11]);
+    chan4  = convert(rx_buf[12], rx_buf[13], rx_buf[14]);
+    chan5  = convert(rx_buf[15], rx_buf[16], rx_buf[17]);
+    chan6  = convert(rx_buf[18], rx_buf[19], rx_buf[20]);
+    chan7  = convert(rx_buf[21], rx_buf[22], rx_buf[23]);
+    chan8  = convert(rx_buf[24], rx_buf[25], rx_buf[26]);
 
-    /* Todo: NRF_LOG_DEBUG("Status 0x%x", status); */
-    /* NRF_LOG_DEBUG("Channel 1 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan1)); */
+//    Todo: NRF_LOG_DEBUG("Status 0x%x", status);
+    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1*47, chan2*47, chan3*47, chan4*47);
     /* NRF_LOG_DEBUG("Channel 2 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan2)); */
     /* NRF_LOG_DEBUG("Channel 3 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan3)); */
     /* NRF_LOG_DEBUG("Channel 4 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan4)); */

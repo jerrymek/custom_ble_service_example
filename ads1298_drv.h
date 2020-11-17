@@ -32,6 +32,7 @@ typedef struct
 
 void ads_init_gpio_pins(void);
 void ads_power_up_sequence(void);
+void ads_configure_normal_input_measurment(void);
 void ads_configure_shorted_input_measurment(void);
 void ads_read_adc_data(void);
 void ads_init_spi(void);
