@@ -183,10 +183,10 @@ float chan8  = 0.0;
 
 void ads_get_channel_data(ads_emg_data *emg_data)
 {
-    emg_data->chan1.f = chan1;
-    emg_data->chan2.f = chan2;
-    emg_data->chan3.f = chan3;
-    emg_data->chan4.f = chan4;
+    emg_data->chan1.u = chan1;
+    emg_data->chan2.u = chan2;
+    emg_data->chan3.u = chan3;
+    emg_data->chan4.u = chan4;
 }
 
 /**
