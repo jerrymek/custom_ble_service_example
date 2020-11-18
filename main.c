@@ -207,38 +207,30 @@ static void timer_timeout_sensor_handler(void * p_context)
     {
 	nrf_gpio_pin_toggle(LED_4);
 	ads_get_channel_data(&main_emg_data);
-	uint8_t emg_buf[] = {0x0, 0x6,
-			     0x0, 0x0, 0x0, 0x0};
+	uint8_t emg_buf[] = {0x0, 0x4,
+			     0x0, 0x0};
 	uint32_t emg_data = 0;
 	emg_buf[0] = 0x10 + emg_device_index;
 	switch (emg_buf[0])
 	{
 	case 0x10:
-	    emg_buf[2] = ((main_emg_data.chan1.u) >> 24) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan1.u) >> 16) & 0xff;
-	    emg_buf[4] = ((main_emg_data.chan1.u) >> 8) & 0xff;
-	    emg_buf[5] = (main_emg_data.chan1.u) & 0xff;
+	    emg_buf[2] = ((main_emg_data.chan1.u) >> 8) & 0xff;
+	    emg_buf[3] = ((main_emg_data.chan1.u)) & 0xff;
 	    emg_device_index++;
 	    break;
 	case 0x11:
-	    emg_buf[2] = ((main_emg_data.chan2.u) >> 24) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan2.u) >> 16) & 0xff;
-	    emg_buf[4] = ((main_emg_data.chan2.u) >> 8) & 0xff;
-	    emg_buf[5] = ((main_emg_data.chan2.u)) & 0xff;
+	    emg_buf[2] = ((main_emg_data.chan2.u) >> 8) & 0xff;
+	    emg_buf[3] = ((main_emg_data.chan2.u)) & 0xff;
 	    emg_device_index++;
 	    break;
 	case 0x12:
-	    emg_buf[2] = ((main_emg_data.chan3.u) >> 24) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan3.u) >> 16) & 0xff;
-	    emg_buf[4] = ((main_emg_data.chan3.u) >> 8) & 0xff;
-	    emg_buf[5] = ((main_emg_data.chan3.u)) & 0xff;
+	    emg_buf[2] = ((main_emg_data.chan3.u) >> 8) & 0xff;
+	    emg_buf[3] = ((main_emg_data.chan3.u)) & 0xff;
 	    emg_device_index++;
 	    break;
 	case 0x13:
-	    emg_buf[2] = ((main_emg_data.chan4.u) >> 24) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan4.u) >> 16) & 0xff;
-	    emg_buf[4] = ((main_emg_data.chan4.u) >> 8) & 0xff;
-	    emg_buf[5] = ((main_emg_data.chan4.u)) & 0xff;
+	    emg_buf[2] = ((main_emg_data.chan4.u) >> 8) & 0xff;
+	    emg_buf[3] = ((main_emg_data.chan4.u)) & 0xff;
 	    emg_device_index = 0;
 	    break;
 	default:
@@ -1106,7 +1098,8 @@ int main(void)
     ads_init_gpio_pins();
     ads_init_spi();
     ads_power_up_sequence();
-    ads_configure_normal_input_measurment();
+    ads_configure_measurment(NORMAL_ELECTRODE_INPUT +
+			     PGA_GAIN_0);
  
     for (;;)
     {

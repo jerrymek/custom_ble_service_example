@@ -78,14 +78,6 @@
 #define PGA_GAIN_1             0x20
 #define PGA_GAIN_0             0x10
 #define RESERVED_0x04          0x08 // Bit 3
-#define NORMAL_ELECTRODE_INPUT 0x00 // Bits 0, 1 and 2
-#define INPUT_SHORTED          0x01
-#define RLD_MEAS_BIT_FOR_RLD   0x02
-#define MVDD_FOR_SUPPLY_MEAS   0x03
-#define TEMPERATURE_SENSOR     0x04
-#define TEST_SIGNAL            0x05
-#define POSITIVE_ELECTRODE     0x06
-#define NEGATIVE_ELECTRODE     0x07
 
 #define RLD_SENSP 0xD // (2) 00 RLD8P(1) RLD7P(1) RLD6P(1) RLD5P(1) RLD4P RLD3P RLD2P RLD1P
 #define RLD_SENSN 0xE // (2) 00 RLD8N(1) RLD7N(1) RLD6N(1) RLD5N(1) RLD4N RLD3N RLD2N RLD1N
@@ -172,14 +164,14 @@ typedef struct
 } ads_reg_byte1_t;
 
 uint32_t status = 0;
-int32_t chan1  = 0;
-int32_t chan2  = 0;
-int32_t chan3  = 0;
-int32_t chan4  = 0;
-int32_t chan5  = 0;
-int32_t chan6  = 0;
-int32_t chan7  = 0;
-int32_t chan8  = 0;
+int16_t chan1  = 0;
+int16_t chan2  = 0;
+int16_t chan3  = 0;
+int16_t chan4  = 0;
+int16_t chan5  = 0;
+int16_t chan6  = 0;
+int16_t chan7  = 0;
+int16_t chan8  = 0;
 
 void ads_get_channel_data(ads_emg_data *emg_data)
 {
@@ -416,7 +408,7 @@ void ads_start_conversion(void)
     MY_ERROR_CHECK(ads_send_command(&ADS_START, 1, NULL, 0));
 }
 
-void ads_configure_normal_input_measurment(void)
+void ads_configure_measurment(uint8_t configuration)
 {
     ret_code_t err_code = GENERAL_FAILURE;
     uint8_t tx_buf[3] = { 0, 0, 0 };
@@ -429,7 +421,7 @@ void ads_configure_normal_input_measurment(void)
     write_register (CONFIG1, 0x86);
     write_register (CONFIG2, 0x10);
     write_register (CONFIG3, 0xDC);
-    ads_set_channel_x( NORMAL_ELECTRODE_INPUT );
+    ads_set_channel_x( configuration );
     write_register (LOFF_SENSP, 0xff);
     write_register (LOFF_SENSN, 0x02);
     write_register (LOFF_STATP, 0xff);
@@ -472,19 +464,19 @@ void ads_configure_shorted_input_measurment(void)
     ads_set_RDATAC();
 }
 
-int32_t convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
+int16_t convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
 {
     int32_t i = r1;
+
     i = (i << 8) | r2;
     i = (i << 8) | r3;
-// Todo:    NRF_LOG_DEBUG("0x%06x\n", i);
 
     if (i & 0x800000)
 	i |= ~0xffffff;
 
-//    const float Q = 1.0 / 0x7fffff;
+    i = (i/0xff);
 
-    return (i); // * Q;
+    return (int16_t)(i);
 }
 
 void ads_log_rx_buf(void)
@@ -517,7 +509,8 @@ void ads_read_adc_data(void)
     chan8  = convert(rx_buf[24], rx_buf[25], rx_buf[26]);
 
 //    Todo: NRF_LOG_DEBUG("Status 0x%x", status);
-    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1*47, chan2*47, chan3*47, chan4*47);
+//    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1*47, chan2*47, chan3*47, chan4*47);
+    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1, chan2, chan3, chan4);
     /* NRF_LOG_DEBUG("Channel 2 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan2)); */
     /* NRF_LOG_DEBUG("Channel 3 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan3)); */
     /* NRF_LOG_DEBUG("Channel 4 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan4)); */
