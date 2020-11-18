@@ -157,7 +157,7 @@ ble_ss_t m_sensor_service;
 // app_timer id variable and define our timer interval and define a timer interval
 APP_TIMER_DEF(m_our_char_timer_id);
 APP_TIMER_DEF(m_sensor_char_timer_id);
-#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) //1000 ms intervals
+#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) // Todo: check this setting! 1000 ms intervals
 
 ads_emg_data main_emg_data;
 
@@ -186,11 +186,6 @@ static void timer_timeout_our_handler(void * p_context)
     nrf_gpio_pin_toggle(LED_4);
 }
 
-static uint8_t imu_buf[] = {0x30, 0xe,
-			    0x56, 0x56, 0x56, 0x56,
-			    0x56, 0x56, 0x56, 0x56,
-			    0x56, 0x56, 0x56, 0x56};
-
 static uint8_t emg_device_index = 0;
 
 static void timer_timeout_sensor_handler(void * p_context)
@@ -199,6 +194,9 @@ static void timer_timeout_sensor_handler(void * p_context)
     static uint8_t buf_index;
     if (buf_index % 2 == 0)
     {
+	uint8_t imu_buf[] = {0x30, 0x4,
+			     0x01, 0x02};
+
 	nrf_gpio_pin_toggle(LED_3);
 	err_code = data_stream_update(&m_sensor_service,
 				      imu_buf);
