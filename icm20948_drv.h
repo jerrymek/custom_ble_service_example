@@ -6,4 +6,145 @@
 #ifndef _ICM20948_DRV_H_
 #define _ICM20948_DRV_H_
 
+/*
+ * 7.1 USER BANK 0 REGISTER MAP
+ */
+#define 0x00 WHO_AM_I             // R WHO_AM_I[7:0]
+#define 0x03 USER_CTRL            // R/W DMP_EN FIFO_EN I2C_MST_EN I2C_IF_DIS DMP_RST SRAM_RST I2C_MST_RST -
+#define 0x05 LP_CONFIG            // R/W I2C_MST_CYCLE ACCEL_CYCLE GYRO_CYCLE -
+#define 0x06 PWR_MGMT_1           // R/W DEVICE_RESET SLEEP LP_EN - TEMP_DIS CLKSEL[2:0]
+#define 0x07 PWR_MGMT_2           // R/W - DISABLE_ACCEL DISABLE_GYRO
+#define 0x0F INT_PIN_CFG          // R/W INT1_ACTL INT1_OPEN INT1_LATCH_INT_ENINT_ANYRD_2CLEAR ACTL_FSYNC FSYNC_INT_MODE_EN BYPASS_EN -
+#define 0x10 INT_ENABLE           // R/W REG_WOF_EN - WOM_INT_EN PLL_RDY_EN DMP_INT1_EN I2C_MST_INT_EN
+#define 0x11 INT_ENABLE_1         // R/W - RAW_DATA_0_RDY_EN
+#define 0x12 INT_ENABLE_2         // R/W - FIFO_OVERFLOW_EN[4:0]
+#define 0x13 INT_ENABLE_3         // R/W - FIFO_WM_EN[4:0]
+#define 0x17 I2C_MST_STATUS       // R/C PASS_THROUGH I2C_SLV4_DONE I2C_LOST_ARB I2C_SLV4_NACK I2C_SLV3_NACK I2C_SLV2_NACK I2C_SLV1_NACK I2C_SLV0_NACK
+#define 0x19 INT_STATUS           // R/C - WOM_INT PLL_RDY_INT DMP_INT1 I2C_MST_INT
+#define 0x1A INT_STATUS_1         // R/C - RAW_DATA_0_RDY_INT
+#define 0x1B INT_STATUS_2         // R/C - FIFO_OVERFLOW_INT[4:0]
+#define 0x1C INT_STATUS_3         // R/C - FIFO_WM_INT[4:0]
+#define 0x28 DELAY_TIMEH          // R DELAY_TIMEH[7:0]
+#define 0x29 DELAY_TIMEL          // R DELAY_TIMEL[7:0]
+#define 0x2D ACCEL_XOUT_H         // R ACCEL_XOUT_H[7:0]
+#define 0x2E ACCEL_XOUT_L         // R ACCEL_XOUT_L[7:0]
+#define 0x2F ACCEL_YOUT_H         // R ACCEL_YOUT_H[7:0]
+#define 0x30 ACCEL_YOUT_L         // R ACCEL_YOUT_L[7:0]
+#define 0x31 ACCEL_ZOUT_H         // R ACCEL_ZOUT_H[7:0]
+#define 0x32 ACCEL_ZOUT_L         // R ACCEL_ZOUT_L[7:0]
+#define 0x33 GYRO_XOUT_H          // R GYRO_XOUT_H[7:0]
+#define 0x34 GYRO_XOUT_L          // R GYRO_XOUT_L[7:0]
+#define 0x35 GYRO_YOUT_H          // R GYRO_YOUT_H[7:0]
+#define 0x36 GYRO_YOUT_L          // R GYRO_YOUT_L[7:0]
+#define 0x37 GYRO_ZOUT_H          // R GYRO_ZOUT_H[7:0]
+#define 0x38 GYRO_ZOUT_L          // R GYRO_ZOUT_L[7:0]
+#define 0x39 TEMP_OUT_H           // R TEMP_OUT_H[7:0]
+#define 0x3A TEMP_OUT_L           // R TEMP_OUT_L[7:0]
+#define 0x3B EXT_SLV_SENS_DATA_00 // R EXT_SLV_SENS_DATA_00[7:0]
+#define 0x3C EXT_SLV_SENS_DATA_01 // R EXT_SLV_SENS_DATA_01[7:0]
+#define 0x3D EXT_SLV_SENS_DATA_02 // R EXT_SLV_SENS_DATA_02[7:0]
+#define 0x3E EXT_SLV_SENS_DATA_03 // R EXT_SLV_SENS_DATA_03[7:0]
+#define 0x3F EXT_SLV_SENS_DATA_04 // R EXT_SLV_SENS_DATA_04[7:0]
+#define 0x40 EXT_SLV_SENS_DATA_05 // R EXT_SLV_SENS_DATA_05[7:0]
+#define 0x41 EXT_SLV_SENS_DATA_06 // R EXT_SLV_SENS_DATA_06[7:0]
+#define 0x42 EXT_SLV_SENS_DATA_07 // R EXT_SLV_SENS_DATA_07[7:0]
+#define 0x43 EXT_SLV_SENS_DATA_08 // R EXT_SLV_SENS_DATA_08[7:0]
+#define 0x44 EXT_SLV_SENS_DATA_09 // R EXT_SLV_SENS_DATA_09[7:0]
+#define 0x45 EXT_SLV_SENS_DATA_10 // R EXT_SLV_SENS_DATA_10[7:0]
+#define 0x46 EXT_SLV_SENS_DATA_11 // R EXT_SLV_SENS_DATA_11[7:0]
+#define 0x47 EXT_SLV_SENS_DATA_12 // R EXT_SLV_SENS_DATA_12[7:0]
+#define 0x48 EXT_SLV_SENS_DATA_13 // R EXT_SLV_SENS_DATA_13[7:0]
+#define 0x49 EXT_SLV_SENS_DATA_14 // R EXT_SLV_SENS_DATA_14[7:0]
+#define 0x4A EXT_SLV_SENS_DATA_15 // R EXT_SLV_SENS_DATA_15[7:0]
+#define 0x4B EXT_SLV_SENS_DATA_16 // R EXT_SLV_SENS_DATA_16[7:0]
+#define 0x4C EXT_SLV_SENS_DATA_17 // R EXT_SLV_SENS_DATA_17[7:0]
+#define 0x4D EXT_SLV_SENS_DATA_18 // R EXT_SLV_SENS_DATA_18[7:0]
+#define 0x4E EXT_SLV_SENS_DATA_19 // R EXT_SLV_SENS_DATA_19[7:0]
+#define 0x4F EXT_SLV_SENS_DATA_20 // R EXT_SLV_SENS_DATA_20[7:0]
+#define 0x50 EXT_SLV_SENS_DATA_21 // R EXT_SLV_SENS_DATA_21[7:0]
+#define 0x51 EXT_SLV_SENS_DATA_22 // R EXT_SLV_SENS_DATA_22[7:0]
+#define 0x52 EXT_SLV_SENS_DATA_23 // R EXT_SLV_SENS_DATA_23[7:0]
+#define 0x66 FIFO_EN_1            // R/W - SLV_3_FIFO_EN SLV_2_FIFO_EN SLV_1_FIFO_EN SLV_0_FIFO_EN
+#define 0x67 FIFO_EN_2            // R/W - ACCEL_FIFO_EN GYRO_Z_FIFO_EN GYRO_Y_FIFO_EN GYRO_X_FIFO_EN TEMP_FIFO_EN
+#define 0x68 FIFO_RST             // R/W - FIFO_RESET[4:0]
+#define 0x69 FIFO_MODE            // R/W - FIFO_MODE[4:0]
+#define 0x70 FIFO_COUNTH          // R - FIFO_CNT[12:8]
+#define 0x71 FIFO_COUNTL          // R FIFO_CNT[7:0]
+#define 0x72 FIFO_R_W             // R/W FIFO_R_W[7:0]
+#define 0x74 DATA_RDY_STATUS      // R/C WOF_STATU
+
+/*
+ * 7.2 USER BANK 1 REGISTER MAP
+ */
+
+#define 0x02 SELF_TEST_X_GYRO        // R/W XG_ST_DATA[7:0]
+#define 0x03 SELF_TEST_Y_GYRO        // R/W YG_ST_DATA[7:0]
+#define 0x04 SELF_TEST_Z_GYRO        // R/W ZG_ST_DATA[7:0]
+#define 0x0E SELF_TEST_X_ACCEL       // R/W XA_ST_DATA[7:0]
+#define 0x0F SELF_TEST_Y_ACCEL       // R/W YA_ST_DATA[7:0]
+#define 0x10 SELF_TEST_Z_ACCEL       // R/W ZA_ST_DATA[7:0]
+#define 0x14 XA_OFFS_H               // R/W XA_OFFS[14:7]
+#define 0x15 XA_OFFS_L               // R/W XA_OFFS[6:0] -
+#define 0x17 YA_OFFS_H               // R/W YA_OFFS[14:7]
+#define 0x18 YA_OFFS_L               // R/W YA_OFFS[6:0] -
+#define 0x1A ZA_OFFS_H               // R/W ZA_OFFS[14:7]
+#define 0x1B ZA_OFFS_L               // R/W ZA_OFFS[6:0] -
+#define 0x28 TIMEBASE_CORRECTION_PLL // R/W TBC_PLL[7:0]
+#define 0x7F REG_BANK_SEL            // R/W - USER_BANK[1:0] -
+
+/*
+ * 7.3 USER BANK 2 REGISTER MAP
+ */
+
+#define 0x00 GYRO_SMPLRT_DIV          // R/W GYRO_SMPLRT_DIV[7:0]
+#define 0x01 GYRO_CONFIG_1            // R/W - GYRO_DLPFCFG[2:0] GYRO_FS_SEL[1:0] GYRO_FCHOICE
+#define 0x02 GYRO_CONFIG_2            // R/W - XGYRO_CTEN YGYRO_CTEN ZGYRO_CTEN GYRO_AVGCFG[2:0]
+#define 0x03 XG_OFFS_USRH             // R/W X_OFFS_USER[15:8]
+#define 0x04 XG_OFFS_USRL             // R/W X_OFFS_USER[7:0]
+#define 0x05 YG_OFFS_USRH             // R/W Y_OFFS_USER[15:8]
+#define 0x06 YG_OFFS_USRL             // R/W Y_OFFS_USER[7:0]
+#define 0x07 ZG_OFFS_USRH             // R/W Z_OFFS_USER[15:8]
+#define 0x08 ZG_OFFS_USRL             // R/W Z_OFFS_USER[7:0]
+#define 0x09 ODR_ALIGN_EN             // R/W - ODR_ALIGN_EN
+#define 0x10 ACCEL_SMPLRT_DIV_1       // R/W - ACCEL_SMPLRT_DIV[11:8]
+#define 0x11 ACCEL_SMPLRT_DIV_2       // R/W ACCEL_SMPLRT_DIV[7:0]
+#define 0x12 ACCEL_INTEL_CTRL         // R/W - ACCEL_INTEL_EN ACCEL_INTEL_MODE_INT
+#define 0x13 ACCEL_WOM_THR            // R/W WOM_THRESHOLD[7:0]
+#define 0x14 ACCEL_CONFIG             // R/W - ACCEL_DLPFCFG[2:0] ACCEL_FS_SEL[1:0] ACCEL_FCHOICE
+#define 0x15 ACCEL_CONFIG_2           // R/W - AX_ST_EN_R EGAY_ST_EN_REG AZ_ST_EN_REG DEC3_CFG[1:0]
+#define 0x52 FSYNC_CONFIG             // R/W DELAY_TIME_EN - WOF_DEGLITCH_EN WOF_EDGE_INT EXT_SYNC_SET[3:0]
+#define 0x53 TEMP_CONFIG              // R/W - TEMP_DLPFCFG[2:0]
+#define 0x54 MOD_CTRL_USR             // R/W - REG_LP_DMP_EN
+#define 0x7F REG_BANK_SEL             // R/W - USER_BANK[1:0] -
+
+/*
+ * 7.4 USER BANK 3 REGISTER MAP
+ */
+
+#define 0x00 I2C_MST_ODR_CONFIG       // R/W - I2C_MST_ODR_CONFIG[3:0]
+#define 0x01 I2C_MST_CTRL             // R/W MULT_MST_EN - I2C_MST_P_NSR I2C_MST_CLK[3:0]
+#define 0x02 I2C_MST_DELAY_CTRL       // R/W DELAY_ES_SHADOW - I2C_SLV4_DELAY_EN I2C_SLV3_DELAY_EN I2C_SLV2_DELAY_ENI2C_SLV1_DELAY_EN I2C_SLV0_DELAY_EN
+#define 0x03 I2C_SLV0_ADDR            // R/W I2C_SLV0_RNW I2C_ID_0[6:0]
+#define 0x04 I2C_SLV0_REG             // R/W I2C_SLV0_REG[7:0]
+#define 0x05 I2C_SLV0_CTRL            // R/W I2C_SLV0_EN I2C_SLV0_BYTE_SW I2C_SLV0_REG_DIS I2C_SLV0_GRP I2C_SLV0_LENG[3:0]
+#define 0x06 I2C_SLV0_DO              // R/W I2C_SLV0_DO[7:0]
+#define 0x07 I2C_SLV1_ADDR            // R/W I2C_SLV1_RNW I2C_ID_1[6:0]
+#define 0x08 I2C_SLV1_REG             // R/W I2C_SLV1_REG[7:0]
+#define 0x09 2C_SLV1_CTRL             // R/W I2C_SLV1_EN I2C_SLV1_BYTE_SW I2C_SLV1_REG_DIS I2C_SLV1_GRP I2C_SLV1_LENG[3:0]
+#define 0x0A I2C_SLV1_DO              // R/W I2C_SLV1_DO[7:0]
+#define 0x0B I2C_SLV2_ADDR            // R/W I2C_SLV2_RNW I2C_ID_2[6:0]
+#define 0x0C I2C_SLV2_REG             // R/W I2C_SLV2_REG[7:0]
+#define 0x0D I2C_SLV2_CTRL            // R/W I2C_SLV2_EN I2C_SLV2_BYTE_SW I2C_SLV2_REG_DIS I2C_SLV2_GRP I2C_SLV2_LENG[3:0]
+#define 0x0E I2C_SLV2_DO              // R/W I2C_SLV2_DO[7:0]
+#define 0x0F I2C_SLV3_ADDR            // R/W I2C_SLV3_RNW I2C_ID_3[6:0]
+#define 0x10 I2C_SLV3_REG             // R/W I2C_SLV3_REG[7:0]
+#define 0x11 I2C_SLV3_CTRL            // R/W I2C_SLV3_EN I2C_SLV3_BYTE_SW I2C_SLV3_REG_DIS I2C_SLV3_GRP I2C_SLV3_LENG[3:0]
+#define 0x12 I2C_SLV3_DO              // R/W I2C_SLV3_DO[7:0]
+#define 0x13 I2C_SLV4_ADDR            // R/W I2C_SLV4_RNW I2C_ID_4[6:0]
+#define 0x14 I2C_SLV4_REG             // R/W I2C_SLV4_REG[7:0]
+#define 0x15 I2C_SLV4_CTRL            // R/W I2C_SLV4_EN I2C_SLV4_BYTE_SW I2C_SLV4_REG_DIS I2C_SLV4_DLY[4:0]
+#define 0x16 I2C_SLV4_DO              // R/W I2C_SLV4_DO[7:0]
+#define 0x17 I2C_SLV4_DI              // R I2C_SLV4_DI[7:0]
+#define 0x7F REG_BANK_SEL             // R/W - USER_BANK[1:0] -
+
 #endif /* _ICM20948_DRV_H_ */
