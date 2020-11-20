@@ -63,6 +63,7 @@
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
+#include "log_support.h"
 #include "icm20948_drv.h"
 
 /* TWI instance ID. */
@@ -82,8 +83,10 @@ static void gpio_init(void)
     gpio_cfg(I2C_SCL1_PIN,0x0000060C);
 }
 
-void io_i2cInit()
+ret_code_t io_i2cInit()
 {
+    ret_code_t err_code = GENERAL_FAILURE;
+
     // default Channel 0
     const nrf_drv_twi_config_t twi_imu_config =
 	{
@@ -95,12 +98,15 @@ void io_i2cInit()
 	    false
 	};
 	
-    nrf_drv_twi_init(&m_twi,
-		     &twi_imu_config,
-		     NULL/*no handler*/,
-		     NULL);
+    err_code = nrf_drv_twi_init(&m_twi,
+				&twi_imu_config,
+				NULL/*no handler*/,
+				NULL);
+    MY_ERROR_LOG(err_code)
 	
     nrf_drv_twi_enable(&m_twi);
+
+    return err_code;
 }
 
 void io_i2cSetChannel(uint8_t Channel)
@@ -117,16 +123,14 @@ void io_i2cSetChannel(uint8_t Channel)
 		      I2C_SCL1_PIN);
 }
 
-void io_i2cTx(uint8_t Address, char *data, uint16_t Len, uint8_t noStop)
+nrfx_err_t io_i2cTx(uint8_t Address, char *data, uint16_t Len, uint8_t noStop)
 {
-    nrf_drv_twi_tx(&m_twi, Address, data, Len, noStop);
+    return nrf_drv_twi_tx(&m_twi, Address, data, Len, noStop);
 }
 
-uint16_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len)
+nrfx_err_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len)
 {
-    ret_code_t err_code = nrf_drv_twi_rx(&m_twi, Address, dest, Len);
-
-    return err_code == NRF_SUCCESS ? 1:0;
+    return nrf_drv_twi_rx(&m_twi, Address, dest, Len);
 }
 
 /** @} */

@@ -153,7 +153,7 @@
 // 0x69 is the ICM20948's address in the mbed Application Shield, it contains
 // R/W bit and "nrf_drv_twi" (and consequently "nrf_twi_mngr") requires slave
 // address without this bit, hence shifting.
-#define IMU11_ADDR       (0x69U) // Todo: >> 1) // Channel 1, device 1
+#define IMU11_ADDR       (0x69U) // >> 1) // Channel 1, device 1
 #define IMU12_ADDR       (0x68U >> 1) // Channel 1, device 2
 #define IMU21_ADDR       (0x69U >> 1) // Channel 2, device 1
 
@@ -164,7 +164,7 @@
  * @brief Initialize both I2C channels
  * Used ports SDA and SCL must been configured first
  */
-extern void io_i2cInit();
+extern ret_code_t io_i2cInit();
 
 /**
  * @brief Set I2C channel
@@ -179,7 +179,7 @@ extern void io_i2cSetChannel(uint8_t Channel);
  * @param Len = length of data to send 
  * @param noStop = TX will not end with a stop condition
  */
-extern void io_i2cTx(uint8_t Address, char *data, uint16_t Len, uint8_t noStop);
+extern nrfx_err_t io_i2cTx(uint8_t Address, char *data, uint16_t Len, uint8_t noStop);
 
 /**
  * @brief I2C Read
@@ -189,6 +189,6 @@ extern void io_i2cTx(uint8_t Address, char *data, uint16_t Len, uint8_t noStop);
  * @param Len = required length of the received data
  * @return = zero mean not all required data ready
  */
-extern uint16_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len);
+extern nrfx_err_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len);
 
 #endif /* _ICM20948_DRV_H_ */
