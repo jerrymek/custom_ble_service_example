@@ -1427,26 +1427,26 @@
 // <4294967295=> Not connected 
 
 //==========================================================
-#ifndef ADS_PWDN_PIN
-#define ADS_N_PWDN_PIN   2 // Connected from P0.2 to J5:5
-#endif
 #ifndef SPI_SCK_PIN
 #define SPI_SCK_PIN      3 // to J3:3
 #endif
 #ifndef SPI_MOSI_PIN
 #define SPI_MOSI_PIN     4 // to J3:11 (SPI_IN)
 #endif
+#ifndef ADS_PWDN_PIN
+#define ADS_N_PWDN_PIN   7 // Connected from P0.7 to J5:5
+#endif
 #ifndef I2C_SDA2_PIN
-#define I2C_SDA2_PIN    24 // (P0.24) I2C_SDA1_PIN
+#define I2C_SDA2_PIN    24 // (P0.24) I2C_SDA2_PIN
 #endif
 #ifndef I2C_SCL2_PIN
-#define I2C_SCL2_PIN    25 // (P0.25) I2C_SCL1_PIN
+#define I2C_SCL2_PIN    25 // (P0.25) I2C_SCL2_PIN
 #endif
 #ifndef I2C_SDA1_PIN
-#define I2C_SDA1_PIN    26 // (P0.26) I2C_SDA_PIN
+#define I2C_SDA1_PIN    26 // (P0.26) I2C_SDA1_PIN
 #endif
 #ifndef I2C_SCL1_PIN
-#define I2C_SCL1_PIN    27 // (P0.25) I2C_SCL1_PIN
+#define I2C_SCL1_PIN    27 // (P0.27) I2C_SCL1_PIN
 #endif
 #ifndef SPI_MISO_PIN
 #define SPI_MISO_PIN    28 // to J3:13 (SPI_OUT)
@@ -4065,7 +4065,7 @@
  
 
 #ifndef NRFX_TWIM1_ENABLED
-#define NRFX_TWIM1_ENABLED 0
+#define NRFX_TWIM1_ENABLED 1
 #endif
 
 // <o> NRFX_TWIM_DEFAULT_CONFIG_FREQUENCY  - Frequency
@@ -4314,7 +4314,7 @@
  
 
 #ifndef NRFX_TWI1_ENABLED
-#define NRFX_TWI1_ENABLED 0
+#define NRFX_TWI1_ENABLED 1
 #endif
 
 // <o> NRFX_TWI_DEFAULT_CONFIG_FREQUENCY  - Frequency
@@ -5740,13 +5740,13 @@
 // <e> TWI0_ENABLED - Enable TWI0 instance
 //==========================================================
 #ifndef TWI0_ENABLED
-#define TWI0_ENABLED 1
+#define TWI0_ENABLED 0
 #endif
 // <q> TWI0_USE_EASY_DMA  - Use EasyDMA (if present)
  
 
 #ifndef TWI0_USE_EASY_DMA
-#define TWI0_USE_EASY_DMA 1
+#define TWI0_USE_EASY_DMA 0
 #endif
 
 // </e>
@@ -5754,13 +5754,13 @@
 // <e> TWI1_ENABLED - Enable TWI1 instance
 //==========================================================
 #ifndef TWI1_ENABLED
-#define TWI1_ENABLED 0
+#define TWI1_ENABLED 1
 #endif
 // <q> TWI1_USE_EASY_DMA  - Use EasyDMA (if present)
  
 
 #ifndef TWI1_USE_EASY_DMA
-#define TWI1_USE_EASY_DMA 0
+#define TWI1_USE_EASY_DMA 1
 #endif
 
 // </e>

@@ -72,6 +72,7 @@
       <file file_name="$(SDK)/components/libraries/experimental_section_vars/nrf_section_iter.c" />
       <file file_name="$(SDK)/components/libraries/strerror/nrf_strerror.c" />
       <file file_name="$(SDK)/components/libraries/sensorsim/sensorsim.c" />
+      <file file_name="../../../../../../components/libraries/twi_mngr/nrf_twi_mngr.c" />
     </folder>
     <folder Name="None">
       <file file_name="$(SDK)/modules/nrfx/mdk/ses_nRF_Startup.s" />
@@ -94,6 +95,10 @@
         <configuration Name="Common" arm_fp_abi="Hard" />
       </file>
       <file file_name="$(SDK)/modules/nrfx/drivers/src/nrfx_spi.c" />
+      <file file_name="../../../../../../modules/nrfx/drivers/src/nrfx_twim.c" />
+      <file file_name="../../../../../../modules/nrfx/drivers/src/nrfx_twi.c" />
+      <file file_name="../../../../../../integration/nrfx/legacy/nrf_drv_twi.c" />
+      <file file_name="../../../../../../integration/nrfx/legacy/nrf_drv_twi.h" />
     </folder>
     <folder Name="Board Support">
       <file file_name="$(SDK)/components/libraries/bsp/bsp.c" />
@@ -118,6 +123,7 @@
       <file file_name="../../../ads1298_drv.c" />
       <file file_name="../../../ads1298_drv.h" />
       <file file_name="../../../icm20948_drv.c" />
+      <file file_name="../../../icm20948_drv.h" />
     </folder>
     <folder Name="nRF_Segger_RTT">
       <file file_name="$(SDK)/external/segger_rtt/SEGGER_RTT.c" />

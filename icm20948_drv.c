@@ -57,144 +57,76 @@
 #include "app_util_platform.h"
 #include "app_error.h"
 #include "nrf_drv_twi.h"
+#include "nrf_twim.h"
+#include "nrf_gpio.h"
 #include "nrf_delay.h"
-
-
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
+#include "icm20948_drv.h"
 
 /* TWI instance ID. */
-#define TWI_INSTANCE_ID     0
+static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(1);
 
-/* Common addresses definition for temperature sensor. */
-#define LM75B_ADDR          (0x90U >> 1)
+static uint8_t CurrentChannel;
 
-#define LM75B_REG_TEMP      0x00U
-#define LM75B_REG_CONF      0x01U
-#define LM75B_REG_THYST     0x02U
-#define LM75B_REG_TOS       0x03U
-
-/* Mode for LM75B. */
-#define NORMAL_MODE 0U
-
-/* Indicates if operation on TWI has ended. */
-static volatile bool m_xfer_done = false;
-
-/* TWI instance. */
-static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(TWI_INSTANCE_ID);
-
-/* Buffer for samples read from temperature sensor. */
-static uint8_t m_sample;
-
-/**
- * @brief Function for setting active mode on MMA7660 accelerometer.
- */
-void LM75B_set_mode(void)
+static void gpio_cfg(uint32_t pin, uint32_t cfg)
 {
-    ret_code_t err_code;
-
-    /* Writing to LM75B_REG_CONF "0" set temperature sensor in NORMAL mode. */
-    uint8_t reg[2] = {LM75B_REG_CONF, NORMAL_MODE};
-    err_code = nrf_drv_twi_tx(&m_twi, LM75B_ADDR, reg, sizeof(reg), false);
-    APP_ERROR_CHECK(err_code);
-    while (m_xfer_done == false);
-
-    /* Writing to pointer byte. */
-    reg[0] = LM75B_REG_TEMP;
-    m_xfer_done = false;
-    err_code = nrf_drv_twi_tx(&m_twi, LM75B_ADDR, reg, 1, false);
-    APP_ERROR_CHECK(err_code);
-    while (m_xfer_done == false);
+    NRF_GPIO_Type * reg = nrf_gpio_pin_port_decode(&pin);
+    reg->PIN_CNF[pin] = cfg;	
 }
 
-/**
- * @brief Function for handling data from temperature sensor.
- *
- * @param[in] temp          Temperature in Celsius degrees read from sensor.
- */
-__STATIC_INLINE void data_handler(uint8_t temp)
+static void gpio_init(void)
 {
-    NRF_LOG_INFO("Temperature: %d Celsius degrees.", temp);
+    gpio_cfg(I2C_SDA1_PIN,0x0000060C);
+    gpio_cfg(I2C_SCL1_PIN,0x0000060C);
 }
 
-/**
- * @brief TWI events handler.
- */
-void twi_handler(nrf_drv_twi_evt_t const * p_event, void * p_context)
+void io_i2cInit()
 {
-    switch (p_event->type)
-    {
-        case NRF_DRV_TWI_EVT_DONE:
-            if (p_event->xfer_desc.type == NRF_DRV_TWI_XFER_RX)
-            {
-                data_handler(m_sample);
-            }
-            m_xfer_done = true;
-            break;
-        default:
-            break;
-    }
-}
-
-/**
- * @brief UART initialization.
- */
-void twi_init (void)
-{
-    ret_code_t err_code;
-
-    const nrf_drv_twi_config_t twi_icm20948_config = {
-       .scl                = I2C_SCL1_PIN,
-       .sda                = I2C_SDA1_PIN,
-       .frequency          = NRF_DRV_TWI_FREQ_100K,
-       .interrupt_priority = APP_IRQ_PRIORITY_HIGH,
-       .clear_bus_init     = false
-    };
-
-    err_code = nrf_drv_twi_init(&m_twi, &twi_lm75b_config, twi_handler, NULL);
-    APP_ERROR_CHECK(err_code);
-
+    // default Channel 0
+    const nrf_drv_twi_config_t twi_imu_config =
+	{
+	    I2C_SCL1_PIN,
+	    I2C_SDA1_PIN,
+	    NRF_DRV_TWI_FREQ_100K,
+	    APP_IRQ_PRIORITY_HIGH,
+	    false,
+	    false
+	};
+	
+    nrf_drv_twi_init(&m_twi,
+		     &twi_imu_config,
+		     NULL/*no handler*/,
+		     NULL);
+	
     nrf_drv_twi_enable(&m_twi);
 }
 
-/**
- * @brief Function for reading data from temperature sensor.
- */
-static void read_sensor_data()
+void io_i2cSetChannel(uint8_t Channel)
 {
-    m_xfer_done = false;
+    if(Channel == CurrentChannel)
+	return;
 
-    /* Read 1 byte from the specified address - skip 3 bits dedicated for fractional part of temperature. */
-    ret_code_t err_code = nrf_drv_twi_rx(&m_twi, LM75B_ADDR, &m_sample, sizeof(m_sample));
-    APP_ERROR_CHECK(err_code);
+    CurrentChannel = Channel;
+
+    NRF_TWIM_Type * p_twim = m_twi.u.twim.p_twim;
+	
+    nrf_twim_pins_set(p_twim,
+		      I2C_SDA1_PIN,
+		      I2C_SCL1_PIN);
 }
 
-/**
- * @brief Function for main application entry.
- */
-int main(void)
+void io_i2cTx(uint8_t Address, char *data, uint16_t Len, uint8_t noStop)
 {
-    APP_ERROR_CHECK(NRF_LOG_INIT(NULL));
-    NRF_LOG_DEFAULT_BACKENDS_INIT();
+    nrf_drv_twi_tx(&m_twi, Address, data, Len, noStop);
+}
 
-    NRF_LOG_INFO("\r\nTWI sensor example started.");
-    NRF_LOG_FLUSH();
-    twi_init();
-    LM75B_set_mode();
+uint16_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len)
+{
+    ret_code_t err_code = nrf_drv_twi_rx(&m_twi, Address, dest, Len);
 
-    while (true)
-    {
-        nrf_delay_ms(500);
-
-        do
-        {
-            __WFE();
-        }while (m_xfer_done == false);
-
-        read_sensor_data();
-        NRF_LOG_FLUSH();
-    }
+    return err_code == NRF_SUCCESS ? 1:0;
 }
 
 /** @} */

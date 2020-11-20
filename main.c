@@ -56,7 +56,10 @@
 #include <string.h>
 #include "nordic_common.h"
 #include "nrf.h"
+#include "boards.h"
+#include "app_util_platform.h"
 #include "app_error.h"
+#include "compiler_abstraction.h"
 #include "ble.h"
 #include "ble_hci.h"
 #include "ble_srv_common.h"
@@ -69,6 +72,7 @@
 #include "nrf_delay.h"
 #include "app_timer.h"
 #include "peer_manager.h"
+#include "bsp.h"
 #include "bsp_btn_ble.h"
 #include "fds.h"
 #include "sensorsim.h"
@@ -79,6 +83,7 @@
 #include "nrf_ble_bms.h"
 #include "nrf_ble_gatt.h"
 #include "nrf_pwr_mgmt.h"
+#include "nrf_drv_clock.h"
 #include "nrf_gpio.h"
 
 #include "nrf_log.h"
@@ -90,6 +95,7 @@
 #include "sensor_service.h"
 #include "nrf_drv_spi.h"
 #include "ads1298_drv.h"
+#include "icm20948_drv.h"
 
 #define DEVICE_NAME                     "Precure Back Core Unit"                /**< Name of device. Will be included in the advertising data. */
 #define MANUFACTURER_NAME               "Precure A/S"                           /**< Manufacturer. Will be passed to Device Information Service. */
@@ -1098,7 +1104,16 @@ int main(void)
     ads_power_up_sequence();
     ads_configure_measurment(NORMAL_ELECTRODE_INPUT +
 			     PGA_GAIN_0);
- 
+
+    io_i2cInit(); 
+    io_i2cSetChannel(0);
+    io_i2cTx(IMU11_ADDR, ICM_WHO_AM_I, 1, TX_NO_STOP);
+    char *result;
+    err_code = io_i2cRx(IMU11_ADDR, result, 1);
+    NRF_LOG_DEBUG("%s(%d) IMU11 = 0x%x",
+		  __FILENAME__, __LINE__, result);
+    MY_ERROR_CHECK(err_code);
+
     for (;;)
     {
 	idle_state_handle();
