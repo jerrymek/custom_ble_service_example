@@ -9,7 +9,6 @@
 #include <stdint.h>
 #include "ble.h"
 #include "ble_srv_common.h"
-#include "imu_hw_init.h"
 #include "uuid.h"
 
 /* This structure contains various status information for
