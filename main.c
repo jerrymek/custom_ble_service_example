@@ -1105,18 +1105,20 @@ int main(void)
     ads_configure_measurment(NORMAL_ELECTRODE_INPUT +
 			     PGA_GAIN_0);
 
-    MY_ERROR_CHECK(io_i2cInit()); 
-    io_i2cSetChannel(0);
-    char reg_addr = ICM_WHO_AM_I;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, TX_NO_STOP));
-    char result[1] = {0};
-    MY_ERROR_CHECK(io_i2cRx(IMU11_ADDR, result, 1));
-    NRF_LOG_DEBUG("%s(%d) result = 0x%x", __FILENAME__, __LINE__, *result);
+    icmInitI2c();
+    icmDeviceReset();
+    icmReadChipId();
+    icmInitiateIcm20948();
+    icmReadTempData();
+    readAccelData();
+//    readMagnReg (ICM_AK_HXL, 6);
     for (;;)
     {
 	idle_state_handle();
+//	icmReadAcclRawData();
 //	ads_read_adc_data();
         bsp_board_led_invert(BSP_BOARD_LED_0);
+	nrf_delay_ms(100);
     }
 }
 
