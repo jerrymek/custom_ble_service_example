@@ -1109,6 +1109,7 @@ int main(void)
     icmDeviceReset();
     icmReadChipId();
     icmInitiateIcm20948();
+    icmInitiateAk09916();
     icmReadTempData();
     readAccelData();
     readGyroData();

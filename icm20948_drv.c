@@ -152,7 +152,7 @@ extern void icmReadChipId(void)
     MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, TX_NO_STOP));
     char result[1] = {0};
     MY_ERROR_CHECK(io_i2cRx(IMU11_ADDR, result, 1));
-    NRF_LOG_DEBUG("%s(%d) result = 0x%x", __FILENAME__, __LINE__, *result);
+    NRF_LOG_DEBUG("%s(%d) Chip ID = 0x%x", __FILENAME__, __LINE__, *result);
 }
 
 void icmInitiateIcm20948(void)
@@ -248,56 +248,6 @@ void readMagnReg (uint8_t reg, uint8_t length)
     }
 }
 
-/**
- * @brief Setup continuous measurement
- * @param reg: first register to read
- * @param length: number of registers to read
- * Todo:      :returns: register values
- */
-void readMagContinuous(char reg, char length)
-{
-    writeMagnReg(ICM_AK_CNTL2, 0x08);
-
-    char reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_3));
-
-    reg_addr = ICM_I2C_SLV0_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x00));
-    reg_addr = ICM_I2C_SLV0_ADDR;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x80 | IMU_MAG_ADDR));
-    reg_addr = ICM_I2C_SLV0_REG;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, reg));
-    reg_addr = ICM_I2C_SLV0_DO;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0xff));
-    reg_addr = ICM_I2C_SLV0_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0xD0 | length));
-
-    reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_0));
-    
-    nrf_delay_ms(1);
-}
-
-void writeMagnReg(char reg, char data)
-{
-    char reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_3));
-
-    reg_addr = ICM_I2C_SLV0_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x00));
-    reg_addr = ICM_I2C_SLV0_ADDR;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, IMU_MAG_ADDR));
-    reg_addr = ICM_I2C_SLV0_REG;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, reg));
-    reg_addr = ICM_I2C_SLV0_DO;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, data));
-    reg_addr = ICM_I2C_SLV0_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x81));
-
-    reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_0));
-}
-
 extern void icmInitiateAk09916(void)
 {
     char reg_addr =  ICM_INT_PIN_CFG;
@@ -348,7 +298,7 @@ extern void icmReadTempData(void)
   io_i2cTx(IMU11_ADDR, &reg, 2, TX_NO_STOP);
   io_i2cRx(IMU11_ADDR, rawData, 2);
   // Turn the MSB and LSB into a 16-bit value
-  NRF_LOG_DEBUG("result = 0x%02x%02x", rawData[1], rawData[0]);
+  NRF_LOG_DEBUG("Temperature = 0x%02x%02x", rawData[1], rawData[0]);
 }
 
 extern void readAccelData(void)
@@ -364,7 +314,7 @@ extern void readAccelData(void)
     destination[0] = (int16_t)(rawData[0] << 8) | rawData[1];
     destination[1] = (int16_t)(rawData[2] << 8) | rawData[3];
     destination[2] = (int16_t)(rawData[4] << 8) | rawData[5];
-    NRF_LOG_DEBUG("result = %d, %d, %d",
+    NRF_LOG_DEBUG("Accelerometer data = %d, %d, %d",
 		  destination[0], destination[1], destination[2]);
     
 }
@@ -382,33 +332,31 @@ extern void readGyroData(void)
     destination[0] = (int16_t)(rawData[0] << 8) | rawData[1];
     destination[1] = (int16_t)(rawData[2] << 8) | rawData[3];
     destination[2] = (int16_t)(rawData[4] << 8) | rawData[5];
-    NRF_LOG_DEBUG("result = %d, %d, %d",
+    NRF_LOG_DEBUG("Gyroscope data = %d, %d, %d",
 		  destination[0], destination[1], destination[2]);
     
 }
 
 extern void readMagnData(void)
 {
-    int16_t destination[3] = { 0, 0, 0 };
-    uint8_t rawData[6];  // x/y/z accel register data stored here
-    // Read the six raw data registers into data array
-    char reg = ICM_GYRO_XOUT_H;
-    io_i2cTx(IMU11_ADDR, &reg, 1, TX_NO_STOP);
-    io_i2cRx(IMU11_ADDR, rawData, 6);
-
-    // Turn the MSB and LSB into a signed 16-bit value
-    destination[0] = (int16_t)(rawData[0] << 8) | rawData[1];
-    destination[1] = (int16_t)(rawData[2] << 8) | rawData[3];
-    destination[2] = (int16_t)(rawData[4] << 8) | rawData[5];
-    NRF_LOG_DEBUG("result = %d, %d, %d",
-		  destination[0], destination[1], destination[2]);
-    
-}
-
-extern void readMagData(void)
-{
     uint8_t rawData[8];
     int16_t * destination;
+    char reg = 0;
+    char data;
+
+    char reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_3));
+
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x00));
+    reg_addr = ICM_I2C_SLV0_ADDR;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, IMU_MAG_ADDR));
+    reg_addr = ICM_I2C_SLV0_REG;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, reg));
+    reg_addr = ICM_I2C_SLV0_DO;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, data));
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x81));
     char reg1 = ICM_AK_ST1;
     uint8_t statusData = 0;
     io_i2cTx(IMU_MAG_ADDR, &reg1, 1, TX_NO_STOP);
@@ -423,10 +371,64 @@ extern void readMagData(void)
 	    destination[0] = ((int16_t)rawData[1] << 8) | rawData[0];
 	    destination[1] = ((int16_t)rawData[3] << 8) | rawData[2];
 	    destination[2] = ((int16_t)rawData[5] << 8) | rawData[4];
-	    NRF_LOG_DEBUG("result = %d, %d, %d",
+	    NRF_LOG_DEBUG("Magnetometer = %d, %d, %d",
 			  destination[0], destination[1], destination[2]);
 	}
     }
+    reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_0));
+    
+    nrf_delay_ms(1);
+}
+
+/**
+ * @brief Setup continuous measurement
+ * @param reg: first register to read
+ * @param length: number of registers to read
+ * Todo:      :returns: register values
+ */
+void readMagContinuous(char reg, char length)
+{
+    writeMagnReg(ICM_AK_CNTL2, 0x08);
+
+    char reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_3));
+
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x00));
+    reg_addr = ICM_I2C_SLV0_ADDR;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x80 | IMU_MAG_ADDR));
+    reg_addr = ICM_I2C_SLV0_REG;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, reg));
+    reg_addr = ICM_I2C_SLV0_DO;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0xff));
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0xD0 | length));
+
+    reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_0));
+    
+    nrf_delay_ms(1);
+}
+
+void writeMagnReg(char reg, char data)
+{
+    char reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_3));
+
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x00));
+    reg_addr = ICM_I2C_SLV0_ADDR;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, IMU_MAG_ADDR));
+    reg_addr = ICM_I2C_SLV0_REG;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, reg));
+    reg_addr = ICM_I2C_SLV0_DO;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, data));
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, 0x81));
+
+    reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(IMU11_ADDR, &reg_addr, 1, ICM_USER_BANK_0));
 }
 
 /** @} */
