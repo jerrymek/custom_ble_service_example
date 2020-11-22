@@ -362,11 +362,19 @@ extern void icmDeviceReset(void);
 extern void icmReadTempData(void);
 
 /**
- * @brief Read accelerometer data from device
+ * @brief Read accelerometer raw data from device
  *
  * @param int16_t * destination
  * @return -
  */
 extern void readAccelData(void);
+
+/**
+ * @brief Read gyroscope raw data from device
+ *
+ * @param int16_t * destination
+ * @return -
+ */
+extern void readGyroData(void);
 
 #endif /* _ICM20948_DRV_H_ */

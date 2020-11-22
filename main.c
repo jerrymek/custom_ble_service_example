@@ -1111,6 +1111,7 @@ int main(void)
     icmInitiateIcm20948();
     icmReadTempData();
     readAccelData();
+    readGyroData();
 //    readMagnReg (ICM_AK_HXL, 6);
     for (;;)
     {
