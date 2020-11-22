@@ -377,4 +377,12 @@ extern void readAccelData(void);
  */
 extern void readGyroData(void);
 
+/**
+ * @brief Read magnetometer raw data from device
+ *
+ * @param int16_t * destination
+ * @return -
+ */
+extern void readMagnData(void);
+
 #endif /* _ICM20948_DRV_H_ */

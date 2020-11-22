@@ -387,4 +387,46 @@ extern void readGyroData(void)
     
 }
 
+extern void readMagnData(void)
+{
+    int16_t destination[3] = { 0, 0, 0 };
+    uint8_t rawData[6];  // x/y/z accel register data stored here
+    // Read the six raw data registers into data array
+    char reg = ICM_GYRO_XOUT_H;
+    io_i2cTx(IMU11_ADDR, &reg, 1, TX_NO_STOP);
+    io_i2cRx(IMU11_ADDR, rawData, 6);
+
+    // Turn the MSB and LSB into a signed 16-bit value
+    destination[0] = (int16_t)(rawData[0] << 8) | rawData[1];
+    destination[1] = (int16_t)(rawData[2] << 8) | rawData[3];
+    destination[2] = (int16_t)(rawData[4] << 8) | rawData[5];
+    NRF_LOG_DEBUG("result = %d, %d, %d",
+		  destination[0], destination[1], destination[2]);
+    
+}
+
+extern void readMagData(void)
+{
+    uint8_t rawData[8];
+    int16_t * destination;
+    char reg1 = ICM_AK_ST1;
+    uint8_t statusData = 0;
+    io_i2cTx(IMU_MAG_ADDR, &reg1, 1, TX_NO_STOP);
+    if (io_i2cRx(IMU_MAG_ADDR, &statusData, 1) & 0x01)
+    {
+	char reg = ICM_AK_HXL;
+	io_i2cTx(IMU_MAG_ADDR, &reg, 1, TX_NO_STOP);
+	io_i2cRx(IMU_MAG_ADDR, rawData, 8);
+	uint8_t c = rawData[7];	
+	if (!(c & 0x08))
+	{
+	    destination[0] = ((int16_t)rawData[1] << 8) | rawData[0];
+	    destination[1] = ((int16_t)rawData[3] << 8) | rawData[2];
+	    destination[2] = ((int16_t)rawData[5] << 8) | rawData[4];
+	    NRF_LOG_DEBUG("result = %d, %d, %d",
+			  destination[0], destination[1], destination[2]);
+	}
+    }
+}
+
 /** @} */

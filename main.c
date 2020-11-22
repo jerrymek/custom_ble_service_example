@@ -1112,12 +1112,10 @@ int main(void)
     icmReadTempData();
     readAccelData();
     readGyroData();
-//    readMagnReg (ICM_AK_HXL, 6);
+    readMagnData();
     for (;;)
     {
 	idle_state_handle();
-//	icmReadAcclRawData();
-//	ads_read_adc_data();
         bsp_board_led_invert(BSP_BOARD_LED_0);
 	nrf_delay_ms(100);
     }
