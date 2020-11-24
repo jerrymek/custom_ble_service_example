@@ -880,8 +880,11 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	break;
 
     case BLE_GATTS_EVT_SYS_ATTR_MISSING:
-	err_code = sd_ble_gatts_sys_attr_set(p_ble_evt->evt.gatts_evt.conn_handle, NULL, 0, 0);
-	APP_ERROR_CHECK(err_code);
+	err_code = sd_ble_gatts_sys_attr_set(p_ble_evt->evt.gatts_evt.conn_handle,
+					     NULL,
+					     0,
+					     0);
+	MY_ERROR_CHECK(err_code);
 	break;
 	
     default:
@@ -1114,9 +1117,7 @@ int main(void)
     icmInitiateIcm20948();
     icmInitiateAk09916();
     icmReadTempData();
-    readAccelData();
-    readGyroData();
-    readMagnData();
+
     for (;;)
     {
 	idle_state_handle();
