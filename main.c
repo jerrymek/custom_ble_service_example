@@ -166,6 +166,7 @@ APP_TIMER_DEF(m_sensor_char_timer_id);
 #define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) // Todo: check this setting! 1000 ms intervals
 
 ads_emg_data main_emg_data;
+icm_imu_data main_imu_data;
 
 // Use UUIDs for service(s) used in your application.
 static void advertising_start(bool erase_bonds);
@@ -192,60 +193,57 @@ static void timer_timeout_our_handler(void * p_context)
     nrf_gpio_pin_toggle(LED_4);
 }
 
-static uint8_t emg_device_index = 0;
-
 static void timer_timeout_sensor_handler(void * p_context)
 {
     uint32_t err_code = 0;
     static uint8_t buf_index;
-    if (buf_index % 2 == 0)
+    if((buf_index % 2) == 0)
     {
-	uint8_t imu_buf[] = {0x30, 0x4,
-			     0x01, 0x02};
-
 	nrf_gpio_pin_toggle(LED_3);
-	err_code = data_stream_update(&m_sensor_service,
-				      imu_buf);
+	icm_get_imu_data(&main_imu_data);
+	uint8_t imu_buf[0xe] = { 0x00, 0x0e,
+				 0x02, 0x03, 0x04, 0x05,
+				 0x06, 0x07, 0x08, 0x09,
+				 0x0a, 0x0b, 0x0c, 0x0d };
+	imu_buf[ 0] = 0x30; //main_imu_data.device_id;
+	imu_buf[ 1] = 0xe;  //main_imu_data.payload_length;
+	imu_buf[ 2] = ((uint32_t)main_imu_data.acc_x.f << 24);
+	imu_buf[ 3] = ((uint32_t)main_imu_data.acc_x.f << 16);
+	imu_buf[ 4] = ((uint32_t)main_imu_data.acc_x.f <<  8);
+	imu_buf[ 5] = ((uint32_t)main_imu_data.acc_x.f      );
+	imu_buf[ 6] = ((uint32_t)main_imu_data.acc_y.f << 24);
+	imu_buf[ 7] = ((uint32_t)main_imu_data.acc_y.f << 16);
+	imu_buf[ 8] = ((uint32_t)main_imu_data.acc_y.f <<  8);
+	imu_buf[ 9] = ((uint32_t)main_imu_data.acc_y.f      );
+	imu_buf[10] = ((uint32_t)main_imu_data.acc_z.f << 24);
+	imu_buf[11] = ((uint32_t)main_imu_data.acc_z.f << 16);
+	imu_buf[12] = ((uint32_t)main_imu_data.acc_z.f <<  8);
+	imu_buf[13] = ((uint32_t)main_imu_data.acc_z.f      );
+
+	do
+	{
+	    err_code = data_stream_update(&m_sensor_service,
+					  imu_buf);
+	} while (err_code == NRF_ERROR_BUSY);
     }
     else
     {
 	nrf_gpio_pin_toggle(LED_4);
 	ads_get_channel_data(&main_emg_data);
-	uint8_t emg_buf[] = {0x0, 0x4,
+	uint8_t emg_buf[] = {0x0, 0xa,
 			     0x0, 0x0};
-	uint32_t emg_data = 0;
-	emg_buf[0] = 0x10 + emg_device_index;
-	switch (emg_buf[0])
+	emg_buf[0] = 0x10;
+	emg_buf[1] = 4;
+	emg_buf[2] = ((main_emg_data.chan1.u) >> 8) & 0xff;
+	emg_buf[3] = ((main_emg_data.chan1.u)) & 0xff;
+	do
 	{
-	case 0x10:
-	    emg_buf[2] = ((main_emg_data.chan1.u) >> 8) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan1.u)) & 0xff;
-	    emg_device_index++;
-	    break;
-	case 0x11:
-	    emg_buf[2] = ((main_emg_data.chan2.u) >> 8) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan2.u)) & 0xff;
-	    emg_device_index++;
-	    break;
-	case 0x12:
-	    emg_buf[2] = ((main_emg_data.chan3.u) >> 8) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan3.u)) & 0xff;
-	    emg_device_index++;
-	    break;
-	case 0x13:
-	    emg_buf[2] = ((main_emg_data.chan4.u) >> 8) & 0xff;
-	    emg_buf[3] = ((main_emg_data.chan4.u)) & 0xff;
-	    emg_device_index = 0;
-	    break;
-	default:
-	    MY_ERROR_LOG(NRF_ERROR_FORBIDDEN);
-	    /* Todo: MY_ERROR_CHECK(NRF_ERROR_FORBIDDEN); */
-	};
-	err_code = data_stream_update(&m_sensor_service,
-				      emg_buf);
+	    err_code = data_stream_update(&m_sensor_service,
+					  emg_buf);
+	} while (err_code == NRF_ERROR_BUSY);
     }
 // Todo:   MY_ERROR_CHECK(err_code);
-    MY_ERROR_LOG(err_code);
+//    MY_ERROR_LOG(err_code);
     buf_index++;
 }
 
@@ -881,6 +879,11 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	MY_ERROR_CHECK(err_code);
 	break;
 
+    case BLE_GATTS_EVT_SYS_ATTR_MISSING:
+	err_code = sd_ble_gatts_sys_attr_set(p_ble_evt->evt.gatts_evt.conn_handle, NULL, 0, 0);
+	APP_ERROR_CHECK(err_code);
+	break;
+	
     default:
 	// No implementation needed.
 	break;
@@ -1119,6 +1122,9 @@ int main(void)
 	idle_state_handle();
         bsp_board_led_invert(BSP_BOARD_LED_0);
 	nrf_delay_ms(100);
+        readAccelData();
+        readGyroData();
+        readMagnData();
     }
 }
 

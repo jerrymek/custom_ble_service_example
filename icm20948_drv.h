@@ -262,6 +262,74 @@
 #define TX_NO_STOP       1 // TX transfer will not end with a stop condition.
 #define TX_MAY_STOP      0 // TX transfer may end with a stop condition.
 
+#define REC_BUF_LEN 54     /*  3 IMU:r * 3 sensors * 3 axis * 2 bytes */
+
+typedef struct
+{
+    uint8_t device_id;      /* 0x30 - 0x32, 0x40 - 0x42, 0x50 - 0x52, 0x60 - 0x62 */
+    uint8_t payload_length; /* 14-242 bytes (2 + n*12) */
+    union
+    {
+	float    f;
+	uint16_t u;
+    } acc_x;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } acc_y;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } acc_z;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } gyr_x;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } gyr_y;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } gyr_z;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } mag_x;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } mag_y;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } mag_z;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } eul_x;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } eul_y;
+    union
+    {
+	float    f;
+	uint16_t u;
+    } eul_z;
+} icm_imu_data;
+
 /**
  * @brief Initialize both I2C channels
  * Used ports SDA and SCL must been configured first
@@ -339,11 +407,15 @@ extern void icmReadChipId(void);
  * @param -
  * @return -
  */
-
 extern void readMagnReg (uint8_t reg, uint8_t length);
-extern void writeMagnReg(char reg, char data);
 
-extern void icmReadAcclRawData(void);
+/**
+ * @brief Write magnetometer data
+ *
+ * @param -
+ * @return -
+ */
+extern void writeMagnReg(char reg, char data);
 
 /**
  * @brief Reset of the device
@@ -351,7 +423,7 @@ extern void icmReadAcclRawData(void);
  * @param -
  * @return -
  */
-extern void icmDeviceReset(void);
+void icmDeviceReset(void);
 
 /**
  * @brief Read temperature of thermometer in device
@@ -359,7 +431,7 @@ extern void icmDeviceReset(void);
  * @param -
  * @return -
  */
-extern void icmReadTempData(void);
+void icmReadTempData(void);
 
 /**
  * @brief Read accelerometer raw data from device
@@ -367,7 +439,7 @@ extern void icmReadTempData(void);
  * @param int16_t * destination
  * @return -
  */
-extern void readAccelData(void);
+void readAccelData(void);
 
 /**
  * @brief Read gyroscope raw data from device
@@ -375,7 +447,7 @@ extern void readAccelData(void);
  * @param int16_t * destination
  * @return -
  */
-extern void readGyroData(void);
+void readGyroData(void);
 
 /**
  * @brief Read magnetometer raw data from device
@@ -383,6 +455,14 @@ extern void readGyroData(void);
  * @param int16_t * destination
  * @return -
  */
-extern void readMagnData(void);
+void readMagnData(void);
+
+/**
+ * @brief Get IMU data from driver
+ *
+ * @param icm_imu_data *imu_data
+ * @return -
+ */
+void icm_get_imu_data(icm_imu_data *imu_data);
 
 #endif /* _ICM20948_DRV_H_ */
