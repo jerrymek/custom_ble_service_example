@@ -453,8 +453,11 @@ static int16_t convert( const uint8_t r1, const uint8_t r2 )
 
 extern void readAccelData(uint8_t imu_number)
 {
-    uint8_t rawData[6];  // x/y/z accel register data stored here
-    // Read the six raw data registers into data array
+    uint8_t rawData[6];
+
+    /*
+     * Read the six raw data registers into data array
+     */
     char reg = ICM_ACCEL_XOUT_H;
     io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
     io_i2cRx(imu_addr[imu_number], rawData, 6);
@@ -468,13 +471,10 @@ extern void readAccelData(uint8_t imu_number)
     /*
      * Turn the MSB and LSB into a signed 16-bit value
      */
-    /* NRF_LOG_DEBUG("Accelerometer data = 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x\n", */
-    /* 		  rawData[0], rawData[1], rawData[2], */
-    /* 		  rawData[3], rawData[4], rawData[5]); */
     imuRawData.acc_x.u = (int16_t)convert( rawData[0], rawData[1]);
     imuRawData.acc_y.u = (int16_t)convert( rawData[2], rawData[3]);
     imuRawData.acc_z.u = (int16_t)convert( rawData[4], rawData[5]);
-    NRF_LOG_DEBUG("Accelerometer(%d) len=%d int16 = %d, %d, %d\n",
+    NRF_LOG_DEBUG("Accelerometer(0x%x) len=%d int16 = %d, %d, %d\n",
 		  imuRawData.device_id,
 		  imuRawData.packet_len,
 		  imuRawData.acc_x.u, imuRawData.acc_y.u, imuRawData.acc_z.u);
@@ -482,32 +482,30 @@ extern void readAccelData(uint8_t imu_number)
 
 extern void readGyroData(uint8_t imu_number)
 {
-    uint8_t rawData[6];  // x/y/z accel register data stored here
-    // Read the six raw data registers into data array
+    uint8_t rawData[6];
+
+    /*
+     * Read the six raw data registers into data array
+     */
     char reg = ICM_GYRO_XOUT_H;
     io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
     io_i2cRx(imu_addr[imu_number], rawData, 6);
 
     /*
-     * Turn the MSB and LSB into a signed 16-bit value
-     * Todo: device id will change depending on which IMU
-     * the data comes from. Got only one IMU at the moment.
+     * Set device id and packet length.
      */
-    imuRawData.device_id = (40 + imu_number);
+    imuRawData.device_id = (0x40 + imu_number);
+    imuRawData.packet_len = 0xe; // Todo: set the length of the packet dynamically.
 
     /*
-     * Please note that the lenght for this data will be updated when
-     * converted to float (4 bytes),
+     * Turn the MSB and LSB into a signed 16-bit value
      */
-    imuRawData.packet_len = 8;
-
-    // Turn the MSB and LSB into a signed 16-bit value
-    NRF_LOG_DEBUG("Gyroscope data = 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
-		  rawData[0], rawData[1], rawData[2], rawData[3], rawData[4], rawData[5]);
     imuRawData.gyr_x.u = (uint16_t)(rawData[0] << 8) | rawData[1];
     imuRawData.gyr_y.u = (uint16_t)(rawData[2] << 8) | rawData[3];
     imuRawData.gyr_z.u = (uint16_t)(rawData[4] << 8) | rawData[5];
-    NRF_LOG_DEBUG("Gyroscope int16 = %d, %d, %d\n",
+    NRF_LOG_DEBUG("Gyroscope(0x%x) len=%d int16 = %d, %d, %d\n",
+		  imuRawData.device_id,
+		  imuRawData.packet_len,
 		  imuRawData.gyr_x.u, imuRawData.gyr_y.u, imuRawData.gyr_z.u);
 }
 
@@ -542,27 +540,20 @@ extern void readMagnData(uint8_t imu_number)
 	if (!(c & 0x08))
 	{
 	    /*
-	     * Turn the MSB and LSB into a signed 16-bit value
-	     * Todo: device id will change depending on which IMU
-	     * the data comes from. Got only one IMU at the moment.
+	     * Set device id and packet length.
 	     */
-	    imuRawData.device_id = (50 + imu_number);
+	    imuRawData.device_id = (0x50 + imu_number);
+	    imuRawData.packet_len = 0xe; // Todo: set the length of the packet dynamically.
 
 	    /*
-	     * Please note that the lenght for this data will be updated when
-	     * converted to float (4 bytes),
+	     * Turn the MSB and LSB into a signed 16-bit value
 	     */
-	    imuRawData.packet_len = 6;
-
-	    NRF_LOG_DEBUG("Magnetometer = 0x%02x, 0x%02x,"
-			  " 0x%02x, 0x%02x, 0x%02x, 0x%02x\n",
-			  rawData[0], rawData[1],
-			  rawData[2], rawData[3],
-			  rawData[4], rawData[5]);
 	    imuRawData.mag_x.u = (int16_t)(rawData[1] << 8) | rawData[0];
 	    imuRawData.mag_y.u = (int16_t)(rawData[3] << 8) | rawData[2];
 	    imuRawData.mag_z.u = (int16_t)(rawData[5] << 8) | rawData[4];
-            NRF_LOG_DEBUG("Magnetometer int16 = %d, %d, %d\n",
+            NRF_LOG_DEBUG("Magnetometer(0x%x) len=%d int16 = %d, %d, %d\n",
+                          imuRawData.device_id,
+                          imuRawData.packet_len,
                           imuRawData.mag_x.u, imuRawData.mag_y.u, imuRawData.mag_z.u);
 	}
     }
