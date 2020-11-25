@@ -172,7 +172,7 @@ int16_t chan6  = 0;
 int16_t chan7  = 0;
 int16_t chan8  = 0;
 
-void ads_get_channel_data(ads_emg_data *emg_data)
+void ads_get_channel_data(ads_emg_data_t *emg_data)
 {
     emg_data->chan1.u = chan1;
     emg_data->chan2.u = chan2;
