@@ -463,7 +463,7 @@ void ads_configure_shorted_input_measurment(void)
     ads_set_RDATAC();
 }
 
-int16_t convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
+static int16_t convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
 {
     int32_t i = r1;
 
