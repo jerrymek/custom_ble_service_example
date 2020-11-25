@@ -220,15 +220,6 @@ static void timer_timeout_sensor_handler(void * p_context)
 	imu_buf[12] = (main_imu_data.acc_z.u >>  8) & 0xff;
 	imu_buf[13] = (main_imu_data.acc_z.u      ) & 0xff;
 
-	/* NRF_LOG_DEBUG("imu_buf_1 = 0x%x 0x%x", */
-	/* 	      imu_buf[0], imu_buf[1]); */
-	/* NRF_LOG_DEBUG("imu_buf_2 = 0x%x 0x%x 0x%x 0x%x", */
-	/* 	      imu_buf[2], imu_buf[3], imu_buf[4], imu_buf[5]); */
-	/* NRF_LOG_DEBUG("imu_buf_3 = 0x%x 0x%x 0x%x 0x%x", */
-	/* 	      imu_buf[6], imu_buf[7], imu_buf[8], imu_buf[9]); */
-	/* NRF_LOG_DEBUG("imu_buf_3 = 0x%x 0x%x 0x%x 0x%x", */
-	/* 	      imu_buf[10], imu_buf[11], imu_buf[12], imu_buf[13]); */
-
 	do
 	{
 	    err_code = data_stream_update(&m_sensor_service,
@@ -1127,22 +1118,40 @@ int main(void)
     icmInitiateIcm20948(IMU1);
     icmInitiateAk09916(IMU1);
     icmReadTempData(IMU1);
-    uint8_t imu_number = 0;
+    uint8_t acc_number = 0;
+    uint8_t gro_number = 1;
+    uint8_t mag_number = 2;
     for (;;)
     {
 	idle_state_handle();
         bsp_board_led_invert(BSP_BOARD_LED_0);
 	nrf_delay_ms(1000);
-	readAccelData(imu_number);
-	readGyroData(imu_number);
-//        readMagnData(imu_number); Todo: why the strange values?
-	if(imu_number < 2)
+	readAccelData(acc_number);
+	if(acc_number < 2)
 	{
-	    imu_number++;
+	    acc_number++;
 	}
 	else
 	{
-	    imu_number = 0;
+	    acc_number = 0;
+	}
+	readGyroData(gro_number);
+	if(gro_number < 2)
+	{
+	    gro_number++;
+	}
+	else
+	{
+	    gro_number = 0;
+	}
+        readMagnData(mag_number); // Todo: why the strange values?
+	if(mag_number < 2)
+	{
+	    mag_number++;
+	}
+	else
+	{
+	    mag_number = 0;
 	}
     }
 }

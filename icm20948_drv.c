@@ -77,48 +77,48 @@ typedef struct
     uint8_t  packet_len;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } acc_x;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } acc_y;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } acc_z;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } gyr_x;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } gyr_y;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } gyr_z;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } mag_x;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } mag_y;
     union
     {
-	float f;
-	uint16_t u;
+	float    f;
+	uint32_t u;
     } mag_z;
 } imu_raw_data_t;
 
@@ -143,24 +143,28 @@ uint8_t imu_addr[3] =
 
 void icm_get_imu_data(icm_imu_data_t *imu_data)
 {
+    /*
+     * Get device ID and packet length.
+     */
     imu_data->device_id = imuRawData.device_id;
     imu_data->packet_length = imuRawData.packet_len;
+
+    /*
+     * Get data from the accelerometer.
+     */
     imu_data->acc_x.u = imuRawData.acc_x.u;
     imu_data->acc_y.u = imuRawData.acc_y.u;
     imu_data->acc_z.u = imuRawData.acc_z.u;
-    NRF_LOG_DEBUG("0x%x, %d, Acceleromet2  int32 = %d, %d, %d\n",
-		  imu_data->device_id, imu_data->packet_length,
-		  imu_data->acc_x.u, imu_data->acc_y.u, imu_data->acc_z.u);
 
-    /* Data from the gyroscope
-     * in the ICM chip.
+    /*
+     * Get data from the gyroscope.
      */
     imu_data->gyr_x.u = imuRawData.gyr_x.u;
     imu_data->gyr_y.u = imuRawData.gyr_y.u;
     imu_data->gyr_z.u = imuRawData.gyr_z.u;
 
-    /* Data from the magnetometer
-     * in the ICM chip.
+    /*
+     * Get data from the magnetometer.
      */
     imu_data->mag_x.u = imuRawData.mag_x.u;
     imu_data->mag_y.u = imuRawData.mag_y.u;
@@ -471,9 +475,9 @@ extern void readAccelData(uint8_t imu_number)
     /*
      * Turn the MSB and LSB into a signed 16-bit value
      */
-    imuRawData.acc_x.u = (int16_t)convert( rawData[0], rawData[1]);
-    imuRawData.acc_y.u = (int16_t)convert( rawData[2], rawData[3]);
-    imuRawData.acc_z.u = (int16_t)convert( rawData[4], rawData[5]);
+    imuRawData.acc_x.f = ((int16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
+    imuRawData.acc_y.f = ((int16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
+    imuRawData.acc_z.f = ((int16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
     NRF_LOG_DEBUG("Accelerometer(0x%x) len=%d int16 = %d, %d, %d\n",
 		  imuRawData.device_id,
 		  imuRawData.packet_len,
@@ -500,9 +504,9 @@ extern void readGyroData(uint8_t imu_number)
     /*
      * Turn the MSB and LSB into a signed 16-bit value
      */
-    imuRawData.gyr_x.u = (uint16_t)(rawData[0] << 8) | rawData[1];
-    imuRawData.gyr_y.u = (uint16_t)(rawData[2] << 8) | rawData[3];
-    imuRawData.gyr_z.u = (uint16_t)(rawData[4] << 8) | rawData[5];
+    imuRawData.gyr_x.f = ((uint16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
+    imuRawData.gyr_y.f = ((uint16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
+    imuRawData.gyr_z.f = ((uint16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
     NRF_LOG_DEBUG("Gyroscope(0x%x) len=%d int16 = %d, %d, %d\n",
 		  imuRawData.device_id,
 		  imuRawData.packet_len,
@@ -548,9 +552,9 @@ extern void readMagnData(uint8_t imu_number)
 	    /*
 	     * Turn the MSB and LSB into a signed 16-bit value
 	     */
-	    imuRawData.mag_x.u = (int16_t)(rawData[1] << 8) | rawData[0];
-	    imuRawData.mag_y.u = (int16_t)(rawData[3] << 8) | rawData[2];
-	    imuRawData.mag_z.u = (int16_t)(rawData[5] << 8) | rawData[4];
+	    imuRawData.mag_x.f = ((int16_t)convert(rawData[1], rawData[0])) * 0x1p-8f;
+	    imuRawData.mag_y.f = ((int16_t)convert(rawData[3], rawData[2])) * 0x1p-8f;
+	    imuRawData.mag_z.f = ((int16_t)convert(rawData[5], rawData[4])) * 0x1p-8f;
             NRF_LOG_DEBUG("Magnetometer(0x%x) len=%d int16 = %d, %d, %d\n",
                           imuRawData.device_id,
                           imuRawData.packet_len,

@@ -267,62 +267,62 @@ typedef struct
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } acc_x;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } acc_y;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } acc_z;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } gyr_x;
     union
     {
 	float    f;
-	int16_t  u;
+	uint32_t u;
     } gyr_y;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } gyr_z;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } mag_x;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } mag_y;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } mag_z;
     union
     {
 	float    f;
-	uint16_t  u;
+	uint32_t  u;
     } eul_x;
     union
     {
 	float    f;
-	uint16_t u;
+	uint32_t u;
     } eul_y;
     union
     {
 	float    f;
-	uint16_t  u;
+	uint32_t  u;
     } eul_z;
 } icm_imu_data_t;
 
