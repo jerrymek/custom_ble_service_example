@@ -165,8 +165,8 @@ APP_TIMER_DEF(m_our_char_timer_id);
 APP_TIMER_DEF(m_sensor_char_timer_id);
 #define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) // Todo: check this setting! 1000 ms intervals
 
-ads_emg_data main_emg_data;
-icm_imu_data main_imu_data;
+ads_emg_data_t main_emg_data;
+icm_imu_data_t main_imu_data;
 
 // Use UUIDs for service(s) used in your application.
 static void advertising_start(bool erase_bonds);
@@ -205,20 +205,29 @@ static void timer_timeout_sensor_handler(void * p_context)
 				 0x02, 0x03, 0x04, 0x05,
 				 0x06, 0x07, 0x08, 0x09,
 				 0x0a, 0x0b, 0x0c, 0x0d };
-	imu_buf[ 0] = 0x30; //main_imu_data.device_id;
-	imu_buf[ 1] = 0xe;  //main_imu_data.payload_length;
-	imu_buf[ 2] = ((uint32_t)main_imu_data.acc_x.f << 24);
-	imu_buf[ 3] = ((uint32_t)main_imu_data.acc_x.f << 16);
-	imu_buf[ 4] = ((uint32_t)main_imu_data.acc_x.f <<  8);
-	imu_buf[ 5] = ((uint32_t)main_imu_data.acc_x.f      );
-	imu_buf[ 6] = ((uint32_t)main_imu_data.acc_y.f << 24);
-	imu_buf[ 7] = ((uint32_t)main_imu_data.acc_y.f << 16);
-	imu_buf[ 8] = ((uint32_t)main_imu_data.acc_y.f <<  8);
-	imu_buf[ 9] = ((uint32_t)main_imu_data.acc_y.f      );
-	imu_buf[10] = ((uint32_t)main_imu_data.acc_z.f << 24);
-	imu_buf[11] = ((uint32_t)main_imu_data.acc_z.f << 16);
-	imu_buf[12] = ((uint32_t)main_imu_data.acc_z.f <<  8);
-	imu_buf[13] = ((uint32_t)main_imu_data.acc_z.f      );
+	imu_buf[ 0] = main_imu_data.device_id;
+	imu_buf[ 1] = main_imu_data.packet_length;
+	imu_buf[ 2] = (main_imu_data.acc_x.u >> 24) & 0xff;
+	imu_buf[ 3] = (main_imu_data.acc_x.u >> 16) & 0xff;
+	imu_buf[ 4] = (main_imu_data.acc_x.u >>  8) & 0xff;
+	imu_buf[ 5] = (main_imu_data.acc_x.u      ) & 0xff;
+	imu_buf[ 6] = (main_imu_data.acc_y.u >> 24) & 0xff;
+	imu_buf[ 7] = (main_imu_data.acc_y.u >> 16) & 0xff;
+	imu_buf[ 8] = (main_imu_data.acc_y.u >>  8) & 0xff;
+	imu_buf[ 9] = (main_imu_data.acc_y.u      ) & 0xff;
+	imu_buf[10] = (main_imu_data.acc_z.u >> 24) & 0xff;
+	imu_buf[11] = (main_imu_data.acc_z.u >> 16) & 0xff;
+	imu_buf[12] = (main_imu_data.acc_z.u >>  8) & 0xff;
+	imu_buf[13] = (main_imu_data.acc_z.u      ) & 0xff;
+
+	NRF_LOG_DEBUG("imu_buf_1 = 0x%x 0x%x",
+		      imu_buf[0], imu_buf[1]);
+	NRF_LOG_DEBUG("imu_buf_2 = 0x%x 0x%x 0x%x 0x%x",
+		      imu_buf[2], imu_buf[3], imu_buf[4], imu_buf[5]);
+	NRF_LOG_DEBUG("imu_buf_3 = 0x%x 0x%x 0x%x 0x%x",
+		      imu_buf[6], imu_buf[7], imu_buf[8], imu_buf[9]);
+	NRF_LOG_DEBUG("imu_buf_3 = 0x%x 0x%x 0x%x 0x%x",
+		      imu_buf[10], imu_buf[11], imu_buf[12], imu_buf[13]);
 
 	do
 	{
@@ -1111,24 +1120,32 @@ int main(void)
     ads_configure_measurment(NORMAL_ELECTRODE_INPUT +
 			     PGA_GAIN_0);
 
-    icmInitI2c();
-    icmDeviceReset();
-    icmReadChipId();
-    icmInitiateIcm20948();
-    icmInitiateAk09916();
-    icmReadTempData();
 
+    icmInitI2c();
+    icmDeviceReset(IMU1);
+    icmReadChipId(IMU1);
+    icmInitiateIcm20948(IMU1);
+    icmInitiateAk09916(IMU1);
+    icmReadTempData(IMU1);
+    readAccelData(IMU1);
+    readMagnData(IMU1);
+    uint8_t imu_number = 0;
     for (;;)
     {
 	idle_state_handle();
         bsp_board_led_invert(BSP_BOARD_LED_0);
-	nrf_delay_ms(100);
-        readAccelData();
-        readGyroData();
-        readMagnData();
+	nrf_delay_ms(1000);
+	readAccelData(imu_number);
+	if(imu_number < 2)
+	{
+	    imu_number++;
+	}
+	else
+	{
+	    imu_number = 0;
+	}
     }
 }
-
 
 /**
  * @}

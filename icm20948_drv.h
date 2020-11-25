@@ -251,13 +251,9 @@
  * End Register map for AK09916
  */
 
-// 0x69 is the ICM20948's address in the mbed Application Shield, it contains
-// R/W bit and "nrf_drv_twi" (and consequently "nrf_twi_mngr") requires slave
-// address without this bit, hence shifting.
-#define IMU11_ADDR       (0x69U) // Todo: >> 1) // Channel 1, device 1
-#define IMU12_ADDR       (0x68U) // Todo: >> 1) // Channel 1, device 2
-#define IMU21_ADDR       (0x69U) // Todo: >> 1) // Channel 2, device 1
-#define IMU_MAG_ADDR     (0x0C)
+#define IMU1 0
+#define IMU2 1
+#define IMU3 2
 
 #define TX_NO_STOP       1 // TX transfer will not end with a stop condition.
 #define TX_MAY_STOP      0 // TX transfer may end with a stop condition.
@@ -267,7 +263,7 @@
 typedef struct
 {
     uint8_t device_id;      /* 0x30 - 0x32, 0x40 - 0x42, 0x50 - 0x52, 0x60 - 0x62 */
-    uint8_t payload_length; /* 14-242 bytes (2 + n*12) */
+    uint8_t packet_length; /* 14-242 bytes (2 + n*12) */
     union
     {
 	float    f;
@@ -291,7 +287,7 @@ typedef struct
     union
     {
 	float    f;
-	uint16_t u;
+	int16_t  u;
     } gyr_y;
     union
     {
@@ -316,7 +312,7 @@ typedef struct
     union
     {
 	float    f;
-	uint16_t u;
+	uint16_t  u;
     } eul_x;
     union
     {
@@ -326,9 +322,9 @@ typedef struct
     union
     {
 	float    f;
-	uint16_t u;
+	uint16_t  u;
     } eul_z;
-} icm_imu_data;
+} icm_imu_data_t;
 
 /**
  * @brief Initialize both I2C channels
@@ -375,7 +371,7 @@ extern void icmInitI2c(void);
  * @param -
  * @return -
  */
-extern void icmInitiateDevice(void);
+extern void icmInitiateDevice(uint8_t imu_addr);
 
 /**
  * @brief Initiate Icm20948
@@ -383,7 +379,7 @@ extern void icmInitiateDevice(void);
  * @param -
  * @return -
  */
-extern void icmInitiateIcm20948(void);
+extern void icmInitiateIcm20948(uint8_t imu_addr);
 
 /**
  * @brief Initiate AK09916
@@ -391,7 +387,7 @@ extern void icmInitiateIcm20948(void);
  * @param -
  * @return -
  */
-extern void icmInitiateAk09916(void);
+extern void icmInitiateAk09916(uint8_t imu_addr);
 
 /**
  * @brief Read chip ID
@@ -399,7 +395,7 @@ extern void icmInitiateAk09916(void);
  * @param -
  * @return -
  */
-extern void icmReadChipId(void);
+extern void icmReadChipId(uint8_t imu_addr);
 
 /**
  * @brief Read magnetometer data
@@ -407,7 +403,7 @@ extern void icmReadChipId(void);
  * @param -
  * @return -
  */
-extern void readMagnReg (uint8_t reg, uint8_t length);
+extern void readMagnReg (uint8_t imu_addr, uint8_t reg, uint8_t length);
 
 /**
  * @brief Write magnetometer data
@@ -415,7 +411,7 @@ extern void readMagnReg (uint8_t reg, uint8_t length);
  * @param -
  * @return -
  */
-extern void writeMagnReg(char reg, char data);
+extern void writeMagnReg(uint8_t imu_addr, char reg, char data);
 
 /**
  * @brief Reset of the device
@@ -423,7 +419,7 @@ extern void writeMagnReg(char reg, char data);
  * @param -
  * @return -
  */
-void icmDeviceReset(void);
+void icmDeviceReset(uint8_t imu_addr);
 
 /**
  * @brief Read temperature of thermometer in device
@@ -431,7 +427,7 @@ void icmDeviceReset(void);
  * @param -
  * @return -
  */
-void icmReadTempData(void);
+void icmReadTempData(uint8_t imu_addr);
 
 /**
  * @brief Read accelerometer raw data from device
@@ -439,7 +435,7 @@ void icmReadTempData(void);
  * @param int16_t * destination
  * @return -
  */
-void readAccelData(void);
+void readAccelData(uint8_t imu_addr);
 
 /**
  * @brief Read gyroscope raw data from device
@@ -447,7 +443,7 @@ void readAccelData(void);
  * @param int16_t * destination
  * @return -
  */
-void readGyroData(void);
+void readGyroData(uint8_t imu_addr);
 
 /**
  * @brief Read magnetometer raw data from device
@@ -455,7 +451,7 @@ void readGyroData(void);
  * @param int16_t * destination
  * @return -
  */
-void readMagnData(void);
+void readMagnData(uint8_t imu_addr);
 
 /**
  * @brief Get IMU data from driver
@@ -463,6 +459,6 @@ void readMagnData(void);
  * @param icm_imu_data *imu_data
  * @return -
  */
-void icm_get_imu_data(icm_imu_data *imu_data);
+void icm_get_imu_data(icm_imu_data_t *imu_data);
 
 #endif /* _ICM20948_DRV_H_ */
