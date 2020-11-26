@@ -72,59 +72,6 @@ static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(1);
 
 static uint8_t CurrentChannel;
 
-typedef struct
-{
-    uint8_t  device_id;
-    uint8_t  packet_len;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } data_x;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } data_y;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } data_z;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } gyr_x;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } gyr_y;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } gyr_z;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } mag_x;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } mag_y;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } mag_z;
-} imu_raw_data_t;
-
-imu_raw_data_t imuRawData;
-
 /**
  * 0x69 is the ICM20948's address default I2C address.
  * 68 is also possible if need
@@ -228,11 +175,28 @@ extern void icmReadChipId(uint8_t imu_number)
 
 void icmInitiateIcm20948(uint8_t imu_number)
 {
-    char data[2] = {ICM_PWR_MGMT_1, 0x01};
+    char data[2] = {ICM_PWR_MGMT_1, ICM_PWR_MGMT_1_CLKSEL_0x1};
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
     data[0] = ICM_PWR_MGMT_2;
-    data[1] = 0x00;
+    data[1] = ICM_PWR_MGMT_2_DISABLE_ALL;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
+
+    data[0] = ICM_LP_CONFIG;
+    data[1] = (ICM_LP_CONFIG_I2C_MST_CYCLE |
+	       ICM_LP_CONFIG_ACCEL_CYCLE |
+	       ICM_LP_CONFIG_GYRO_CYCLE);
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
+
+    // data = BIT_I2C_MST_CYCLE|BIT_ACCEL_CYCLE|BIT_GYRO_CYCLE;
+    data[0] = ICM_LP_CONFIG;
+    data[1] = ICM_LP_CONFIG_I2C_MST_CYCLE;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
+    
+    data[0] = ICM_USER_CTRL;
+    data[1] = 0x00; // Disable Digital Motion Processor
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
+
+    // Todo: Load binary into Digital Motion Processor
 
     data[0] = ICM_REG_BANK_SEL;
     data[1] = ICM_USER_BANK_2;
@@ -258,13 +222,11 @@ void icmInitiateIcm20948(uint8_t imu_number)
     c = c | 0x00 << 1;
     c = c | 0x01;
     c = c | 0x18;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &c, 1, TX_NO_STOP));
-
-    data[0] = ICM_ACCEL_SMPLRT_DIV_1;
-    data[1] = 0;
+    data[1] = c;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
+
     data[0] = ICM_ACCEL_SMPLRT_DIV_2;
-    data[1] = 5;
+    data[1] = 4;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
 
     data[0] = ICM_ACCEL_CONFIG;
@@ -284,6 +246,36 @@ void icmInitiateIcm20948(uint8_t imu_number)
     data[0] = ICM_INT_ENABLE_1;
     data[1] = 0x01;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
+}
+
+extern void icmInitiateAk09916(uint8_t imu_number)
+{
+    char reg_addr =  ICM_INT_PIN_CFG;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x02));
+
+    reg_addr = ICM_USER_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, TX_NO_STOP));
+
+    char result[1] = {0};
+    MY_ERROR_CHECK(io_i2cRx(imu_addr[imu_number], result, 1));
+    NRF_LOG_DEBUG("%s(%d) result = 0x%x", __FILENAME__, __LINE__, *result);
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, result[1] |= 0x20));
+
+    reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_3));
+
+    reg_addr = ICM_I2C_MST_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x1D));
+    reg_addr = ICM_I2C_MST_DELAY_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x01));
+
+    readMagnReg(imu_number, IMU_MAG_ADDR, 3);
+
+    writeMagnReg(imu_number, ICM_AK_CNTL3, 0x01);
+    nrf_delay_us(100);
+    nrf_delay_ms(10);
+    readMagContinuous(imu_number, ICM_ACCEL_XOUT_H, 6);
+    //compass_scale = 0.15;
 }
 
 void readMagnReg (uint8_t imu_number, uint8_t reg, uint8_t length)
@@ -350,35 +342,6 @@ void readMagContinuous(uint8_t imu_number, char reg, char length)
     nrf_delay_ms(1);
 }
 
-extern void icmInitiateAk09916(uint8_t imu_number)
-{
-    char reg_addr =  ICM_INT_PIN_CFG;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x30));
-
-    reg_addr = ICM_USER_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, TX_NO_STOP));
-    char result[1] = {0};
-    MY_ERROR_CHECK(io_i2cRx(imu_addr[imu_number], result, 1));
-    NRF_LOG_DEBUG("%s(%d) result = 0x%x", __FILENAME__, __LINE__, *result);
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, result[1] |= 0x20));
-
-    reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_3));
-
-    reg_addr = ICM_I2C_MST_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x1D));
-    reg_addr = ICM_I2C_MST_DELAY_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x01));
-
-    readMagnReg(imu_number, IMU_MAG_ADDR, 3);
-
-    writeMagnReg(imu_number, ICM_AK_CNTL3, 0x01);
-    nrf_delay_us(100);
-    nrf_delay_ms(10);
-    readMagContinuous(imu_number, ICM_ACCEL_XOUT_H, 6);
-    //compass_scale = 0.15;
-}
-
 /***
  * Low Byte of Temp sensor data.
  *
@@ -436,6 +399,9 @@ void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, ui
     io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
     io_i2cRx(imu_addr[imu_number], rawData, 6);
 
+    /* NRF_LOG_DEBUG("data = 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, \n", */
+    /* 		  rawData[0], rawData[1], rawData[2], rawData[3], rawData[4], rawData[5]); */
+
     /*
      * Get device ID and packet length.
      */
@@ -446,14 +412,17 @@ void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, ui
      * Get data from the sensor and
      * turn the MSB and LSB into a signed 16-bit value
      */
-    imu_data->data_x.u = ((int16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
-    imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
-    imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
+    /* imu_data->data_x.u = ((int16_t)convert(rawData[0], rawData[1])) * 0x1p-8f; */
+    /* imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3])) * 0x1p-8f; */
+    /* imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5])) * 0x1p-8f; */
+    imu_data->data_x.u = ((int16_t)convert(rawData[0], rawData[1]));
+    imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3]));
+    imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5]));
 
     NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d\n",
-		  imu_data->device_id,
-		  imu_data->packet_length,
-		  imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
+    		  imu_data->device_id,
+    		  imu_data->packet_length,
+    		  imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
 }
 
 /*
@@ -512,7 +481,10 @@ extern void ConfMagnData2(uint8_t imu_number)
     nrf_delay_ms(1);
 }
 
+  /* if (readByte(AK09916_ADDRESS, AK09916_ST1) & 0x01) */
+  /* { */
 // char reg = ICM_AK_HXL
+#define ICM_AK_ST1_DRDY 0x01
 extern void readMagnSensor(char reg, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
     uint8_t device_id = (0x50 + imu_number);
@@ -522,7 +494,7 @@ extern void readMagnSensor(char reg, uint8_t imu_number, icm_imu_data_t *imu_dat
 
     io_i2cTx(IMU_MAG_ADDR, &mag_status_reg, 1, TX_NO_STOP);
     io_i2cRx(IMU_MAG_ADDR, &statusData, 1);
-    if (((statusData, 1) & 0x01) != 0)
+    if ((statusData & ICM_AK_ST1_DRDY) == ICM_AK_ST1_DRDY)
     {
 	io_i2cTx(IMU_MAG_ADDR, &reg, 1, TX_NO_STOP);
 	io_i2cRx(IMU_MAG_ADDR, rawData, 8);
@@ -546,6 +518,10 @@ extern void readMagnSensor(char reg, uint8_t imu_number, icm_imu_data_t *imu_dat
                           imu_data->packet_length,
                           imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
 	}
+    }
+    else
+    {
+	NRF_LOG_DEBUG("Magnetometer data not ready\n");
     }
 }
 

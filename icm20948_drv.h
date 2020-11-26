@@ -41,11 +41,12 @@
 #define ICM_PWR_MGMT_1_CLKSEL_0x1   0x01
 
 #define ICM_PWR_MGMT_2 0x07 // R/W - DISABLE_ACCL DISABLE_GYRO DISABLE_BOTH
-#define ICM_PWR_MGMT_2_RESERVD_0xC0 0xC0 // Reserved bits               0b1100 000
+#define ICM_PWR_MGMT_2_RESERVD_0xC0 0x80 // Reserved bits               0b1000 000
+#define ICM_PWR_MGMT_2_DISABLE_PWR  0x40 // Disable power pressure      0b0100 000
 #define ICM_PWR_MGMT_2_DISABLE_ACCL 0x38 // Dis accel, en gyro          0b00111000
 #define ICM_PWR_MGMT_2_DISABLE_GYRO 0x07 // En accel, dis gyro          0x00000111
-#define ICM_PWR_MGMT_2_DISABLE_BOTH 0x1f // Disable both accel and gyro 0x00111111
-
+#define ICM_PWR_MGMT_2_DISABLE_ALL  0x1f // Disable pwr, accel and gyro 0x01111111
+ 
 #define ICM_INT_PIN_CFG             0x0F // R/W INT1_ACTL INT1_OPEN INT1_LATCH_INT_ENINT_ANYRD_2CLEAR ACTL_FSYNC FSYNC_INT_MODE_EN BYPASS_EN -
 #define ICM_INT_ENABLE              0x10 // R/W REG_WOF_EN - WOM_INT_EN PLL_RDY_EN DMP_INT1_EN I2C_MST_INT_EN
 #define ICM_INT_ENABLE_1            0x11 // R/W - RAW_DATA_0_RDY_EN
