@@ -276,8 +276,11 @@ static void timer_timeout_sensor_handler(void * p_context)
     {
 	MY_ERROR_CHECK(err_code);
     }
-    MY_ERROR_LOG(err_code);
-    NRF_LOG_DEBUG("BLE_ERROR_GATTS_SYS_ATTR_MISSING, enable notifications on your device!");
+    else
+    {
+	MY_ERROR_LOG(err_code);
+	NRF_LOG_DEBUG("BLE_ERROR_GATTS_SYS_ATTR_MISSING, enable notifications on your device!");
+    }
     buf_index++;
 }
 
