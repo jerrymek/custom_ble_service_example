@@ -248,6 +248,36 @@ void icmInitiateIcm20948(uint8_t imu_number)
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], data, 2, TX_NO_STOP));
 }
 
+/**
+ * @brief Setup continuous measurement
+ * @param reg: first register to read
+ * @param length: number of registers to read
+ * Todo:      :returns: register values
+ */
+void readMagContinuous(uint8_t imu_number, char reg, char length)
+{
+    writeMagnReg(imu_number, ICM_AK_CNTL2, 0x08);
+
+    char reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_3));
+
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x00));
+    reg_addr = ICM_I2C_SLV0_ADDR;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x80 | IMU_MAG_ADDR));
+    reg_addr = ICM_I2C_SLV0_REG;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, reg));
+    reg_addr = ICM_I2C_SLV0_DO;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0xff));
+    reg_addr = ICM_I2C_SLV0_CTRL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0xD0 | length));
+
+    reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_0));
+    
+    nrf_delay_ms(1);
+}
+
 extern void icmInitiateAk09916(uint8_t imu_number)
 {
     char reg_addr =  ICM_INT_PIN_CFG;
@@ -310,36 +340,6 @@ void readMagnReg (uint8_t imu_number, uint8_t reg, uint8_t length)
 		      __FILENAME__, __LINE__,
 		      result[i]);
     }
-}
-
-/**
- * @brief Setup continuous measurement
- * @param reg: first register to read
- * @param length: number of registers to read
- * Todo:      :returns: register values
- */
-void readMagContinuous(uint8_t imu_number, char reg, char length)
-{
-    writeMagnReg(imu_number, ICM_AK_CNTL2, 0x08);
-
-    char reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_3));
-
-    reg_addr = ICM_I2C_SLV0_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x00));
-    reg_addr = ICM_I2C_SLV0_ADDR;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x80 | IMU_MAG_ADDR));
-    reg_addr = ICM_I2C_SLV0_REG;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, reg));
-    reg_addr = ICM_I2C_SLV0_DO;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0xff));
-    reg_addr = ICM_I2C_SLV0_CTRL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0xD0 | length));
-
-    reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_0));
-    
-    nrf_delay_ms(1);
 }
 
 /***
