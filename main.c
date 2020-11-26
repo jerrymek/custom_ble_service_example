@@ -163,9 +163,10 @@ ble_os_t m_our_service;
 ble_ss_t m_sensor_service;
 
 // app_timer id variable and define our timer interval and define a timer interval
-APP_TIMER_DEF(m_our_char_timer_id);
+//APP_TIMER_DEF(m_our_char_timer_id);
 APP_TIMER_DEF(m_sensor_char_timer_id);
-#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) // Todo: check this setting! 1000 ms intervals
+//#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) // Todo: check this setting! 1000 ms intervals
+#define SENSOR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(200) // Todo: check this setting! 1000 ms intervals
 
 ads_emg_data_t main_emg_data;
 icm_imu_data_t main_imu_data;
@@ -563,7 +564,7 @@ static void timers_init(void)
     MY_ERROR_CHECK(err_code);
 
     // Initiate timer
-    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_our_handler);
+//    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_our_handler);
     app_timer_create(&m_sensor_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_sensor_handler);
 
 }
@@ -885,9 +886,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 	err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
 	MY_ERROR_CHECK(err_code);
 
-	//When connected; start our timer to start regular temperature measurements
-	app_timer_start(m_our_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
-	app_timer_start(m_sensor_char_timer_id, OUR_CHAR_TIMER_INTERVAL, NULL);
+	app_timer_start(m_sensor_char_timer_id, SENSOR_CHAR_TIMER_INTERVAL, NULL);
 	break;
 
     case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
