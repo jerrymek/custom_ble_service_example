@@ -195,56 +195,53 @@ static void timer_timeout_our_handler(void * p_context)
     nrf_gpio_pin_toggle(LED_4);
 }
 
-static uint8_t acc_number = 0;
-static uint8_t gro_number = 1;
-static uint8_t mag_number = 2;
-static uint8_t device_identifier = 3;
+static uint8_t acc_number = IMU_DEVICE_1;
+static uint8_t gro_number = IMU_DEVICE_2;
+static uint8_t mag_number = IMU_DEVICE_3;
+static uint8_t imu_index = IMU_ACCELEROMETER;
 static uint8_t buf_index = 0;
+static uint8_t channel = 0;
+
 static void timer_timeout_sensor_handler(void * p_context)
 {
     uint32_t err_code = 0;
     icm_imu_data_t imu_data;
     if((buf_index % 2) == 0)
     {
-    	if (device_identifier == (3))
+    	if (imu_index == IMU_ACCELEROMETER)
     	{
 	    readSensorData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
-	    if(acc_number < 2)
+	    acc_number++;
+	    if(acc_number > IMU_DEVICE_3)
 	    {
-		acc_number++;
+		acc_number = IMU_DEVICE_1;
 	    }
-	    else
-	    {
-		acc_number = 0;
-	    }
-	    device_identifier = 4;
+	    imu_index = IMU_GYROSCOPE;
     	}
-    	else if (device_identifier == (4))
+    	else if (imu_index == IMU_GYROSCOPE)
     	{
     	    readSensorData(&m_sensor_service, ICM_GYRO_XOUT_H, IMU_GYROSCOPE, gro_number, &imu_data);
-    	    if(gro_number < 2)
+	    gro_number++;
+    	    if(gro_number > IMU_DEVICE_3)
     	    {
-    		gro_number++;
+    		gro_number = IMU_DEVICE_1;
     	    }
-    	    else
-    	    {
-    		gro_number = 0;
-    	    }
-	    device_identifier = 5;
+	    imu_index = IMU_MAGNETOMETER;
     	}
-    	else // if (device_identifier == (5))
+    	else if (imu_index == IMU_MAGNETOMETER)
     	{
 	    readSensorData(&m_sensor_service, ICM_AK_ST1, IMU_MAGNETOMETER, mag_number, &imu_data);
-    	    if(mag_number < 2)
+	    mag_number++;
+    	    if(mag_number > IMU_DEVICE_3)
     	    {
-    		mag_number++;
+    		mag_number = IMU_DEVICE_1;
     	    }
-    	    else
-    	    {
-    		mag_number = 0;
-    	    }
-    	    device_identifier == 3;
+    	    imu_index = IMU_ACCELEROMETER;
     	}
+	else
+	{
+	    MY_ERROR_CHECK(GENERAL_FAILURE);
+	}
 
 	nrf_gpio_pin_toggle(LED_3);
     }
@@ -252,20 +249,31 @@ static void timer_timeout_sensor_handler(void * p_context)
     {
 	nrf_gpio_pin_toggle(LED_4);
 	ads_get_channel_data(&main_emg_data);
-	uint8_t emg_buf[] = {0x0, 0xa,
-			     0x0, 0x0};
-	emg_buf[0] = 0x10;
-	emg_buf[1] = 4;
-	emg_buf[2] = ((main_emg_data.chan1.u) >> 8) & 0xff;
-	emg_buf[3] = ((main_emg_data.chan1.u)) & 0xff;
-	//do
-	//{
-	//    err_code = data_stream_update(&m_sensor_service,
-	//				  emg_buf);
-	//} while (err_code == NRF_ERROR_BUSY);
+
+        uint8_t ads_buf[4] = { 0, 0, 0, 0 };
+	
+	ads_buf[0] = (0x10 + channel);
+	ads_buf[1] = 4;
+	ads_buf[2] = ((main_emg_data.chan1.u) >> 8) & 0xff;
+	ads_buf[3] = ((main_emg_data.chan1.u)) & 0xff;
+	do
+	{
+	   err_code = ads_stream_update(&m_sensor_service,
+					ads_buf);
+	} while (err_code == NRF_ERROR_BUSY);
+
+	NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d\n",
+		      ads_buf[0],
+		      ads_buf[1],
+		      ((ads_buf[2] << 8), ads_buf[3]));
+	channel++;
+	if( channel > 4 )
+	{
+	    channel = 0;
+	}
     }
-// Todo:   MY_ERROR_CHECK(err_code);
-//    MY_ERROR_LOG(err_code);
+//    MY_ERROR_CHECK(err_code);
+    MY_ERROR_LOG(err_code);
     buf_index++;
 }
 
@@ -1146,7 +1154,6 @@ int main(void)
     {
 	idle_state_handle();
         bsp_board_led_invert(BSP_BOARD_LED_0);
-//	nrf_delay_ms(10);
     }
 }
 

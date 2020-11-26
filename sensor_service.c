@@ -169,15 +169,16 @@ void sensor_service_init(ble_ss_t * p_sensor_service)
     sensor_char_add(p_sensor_service);
 }
 
-uint32_t data_stream_update(ble_ss_t *p_sensor_service,
-			    icm_imu_data_t *imu_data)
+static uint8_t imu_buf[0xe] = { 0x00, 0x0e,
+                               0x02, 0x03, 0x04, 0x05,
+			       0x06, 0x07, 0x08, 0x09,
+			       0x0a, 0x0b, 0x0c, 0x0d };
+
+uint32_t icm_stream_update(ble_ss_t *p_sensor_service,
+			   icm_imu_data_t *imu_data)
 {
     uint32_t err_code = 0;
 
-    uint8_t imu_buf[0xe] = { 0x00, 0x0e,
-			     0x02, 0x03, 0x04, 0x05,
-			     0x06, 0x07, 0x08, 0x09,
-			     0x0a, 0x0b, 0x0c, 0x0d };
     imu_buf[ 0] = imu_data->device_id;
     imu_buf[ 1] = imu_data->packet_length;
     imu_buf[ 2] = (imu_data->data_x.u >> 24) & 0xff;
@@ -204,6 +205,34 @@ uint32_t data_stream_update(ble_ss_t *p_sensor_service,
 	    hvx_params.offset = 0;
 	    hvx_params.p_len  = &packet_length;
 	    hvx_params.p_data = imu_buf;
+
+	    err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
+	}
+    } while (err_code == NRF_ERROR_BUSY);
+
+    return err_code;
+}
+
+uint8_t emg_buf[] = {0x0, 0x0,
+		     0x0, 0x0};
+
+uint32_t ads_stream_update(ble_ss_t *p_sensor_service,
+			   uint8_t *ads_data)
+{
+    uint32_t err_code = 0;
+
+    do
+    {
+	if (p_sensor_service->conn_handle != BLE_CONN_HANDLE_INVALID)
+	{
+	    ble_gatts_hvx_params_t hvx_params;
+	    memset(&hvx_params, 0, sizeof(hvx_params));
+	    uint16_t packet_length = ads_data[1];
+	    hvx_params.handle = p_sensor_service->char_handles.value_handle;
+	    hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+	    hvx_params.offset = 0;
+	    hvx_params.p_len  = &packet_length;
+	    hvx_params.p_data = ads_data;
 
 	    err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
 	}

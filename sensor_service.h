@@ -135,7 +135,10 @@ static uint8_t get_sensor_data(uint8_t sensor_id,
  *          The number of packets in the buffer is specified by length.
  *          The function return 0 if successful.
  */
-uint32_t data_stream_update(ble_ss_t *p_sensor_service,
-			    icm_imu_data_t *imu_data);
+uint32_t icm_stream_update(ble_ss_t *p_sensor_service,
+			   icm_imu_data_t *imu_data);
+
+uint32_t ads_stream_update(ble_ss_t *p_sensor_service,
+			   uint8_t *ads_data);
 
 #endif  /* SENSOR_SERVICE_H__ */

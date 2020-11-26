@@ -425,6 +425,37 @@ static int16_t convert( const uint8_t r1, const uint8_t r2 )
     return (int16_t)(i);
 }
 
+void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
+{
+    uint8_t rawData[6];
+    uint8_t device_id = (sensor_type | imu_number);
+
+    /*
+     * Read the six raw data registers into data array
+     */
+    io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
+    io_i2cRx(imu_addr[imu_number], rawData, 6);
+
+    /*
+     * Get device ID and packet length.
+     */
+    imu_data->device_id = device_id;
+    imu_data->packet_length = IMU_DATA_LENGTH;
+    
+    /*
+     * Get data from the sensor and
+     * turn the MSB and LSB into a signed 16-bit value
+     */
+    imu_data->data_x.u = ((int16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
+    imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
+    imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
+
+    NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d\n",
+		  imu_data->device_id,
+		  imu_data->packet_length,
+		  imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
+}
+
 /*
  * @brief Read sensor data from the IMU.
  *
@@ -437,44 +468,19 @@ static int16_t convert( const uint8_t r1, const uint8_t r2 )
  */
 extern void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
-    uint8_t rawData[6];
-    uint8_t device_id = (sensor_type + imu_number);
     ret_code_t err_code = GENERAL_FAILURE;
     if (sensor_type == IMU_MAGNETOMETER)
     {
 	ConfMagnData1(imu_number);
-	readSensorData(p_sensor_service, reg, sensor_type, imu_number, imu_data);
+	getSensorData(p_sensor_service, reg, sensor_type, imu_number, imu_data);
 	ConfMagnData2(imu_number);
     }
     else
     {
-	/*
-	 * Read the six raw data registers into data array
-	 */
-	io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
-	io_i2cRx(imu_addr[imu_number], rawData, 6);
-
-	/*
-	 * Get device ID and packet length.
-	 */
-	imu_data->device_id = device_id;
-	imu_data->packet_length = sizeof(imu_data);
-    
-	/*
-	 * Get data from the sensor and
-	 * turn the MSB and LSB into a signed 16-bit value
-	 */
-	imu_data->data_x.u = ((int16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
-	imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
-	imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
-
-	NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d\n",
-		      imu_data->device_id,
-		      imu_data->packet_length,
-		      imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
+	getSensorData(p_sensor_service, reg, sensor_type, imu_number, imu_data);
     }
-    err_code = data_stream_update(p_sensor_service,
-				  imu_data);
+    err_code = icm_stream_update(p_sensor_service,
+			         imu_data);
 }
 
 extern void ConfMagnData1(uint8_t imu_number)
