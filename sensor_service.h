@@ -51,6 +51,27 @@ typedef struct
 #define imu_euler_2 0x61
 #define imu_euler_3 0x62
 
+typedef struct
+{
+    uint8_t device_id;      /* 0x30 - 0x32, 0x40 - 0x42, 0x50 - 0x52, 0x60 - 0x62 */
+    uint8_t packet_length; /* 14-242 bytes (2 + n*12) */
+    union
+    {
+	float    f;
+	uint32_t u;
+    } data_x;
+    union
+    {
+	float    f;
+	uint32_t u;
+    } data_y;
+    union
+    {
+	float    f;
+	uint32_t u;
+    } data_z;
+} icm_imu_data_t;
+
 /**@brief Function for handling BLE Stack events related to sensor service and characteristic.
  *
  * @details Handles all events from the BLE stack of interest to Sensor Service.
@@ -99,12 +120,6 @@ typedef struct
 } euler_angels_t;
 
 /**
- * @brief Pointer to buffer with sensor data
- * @details The buffer can be of the types
- */
-//uint8_t *buf_p;
-
-/**
  * @brief Get sensor data
  * @details Get sensor data from the sensor specified by sensor_id_enum.
  *          If successful data is returned in the buffer
@@ -121,15 +136,6 @@ static uint8_t get_sensor_data(uint8_t sensor_id,
  *          The function return 0 if successful.
  */
 uint32_t data_stream_update(ble_ss_t *p_sensor_service,
-			    uint8_t *buf);
-
-/**
- * @brief Initiate the IMU sensor HW
- * @details Do neccessery register setup and load firmaware that runs
- *          the Sensor Fusion HW support.
- *          Setup the GPIO pins.
- *          The function return 0 if successful.
- */
-uint8_t initiate_imu_hw(void /* TBD */);
+			    icm_imu_data_t *imu_data);
 
 #endif  /* SENSOR_SERVICE_H__ */

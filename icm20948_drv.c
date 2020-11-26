@@ -64,6 +64,7 @@
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 #include "log_support.h"
+#include "sensor_service.h"
 #include "icm20948_drv.h"
 
 /* TWI instance ID. */
@@ -79,17 +80,17 @@ typedef struct
     {
 	float    f;
 	uint32_t u;
-    } acc_x;
+    } data_x;
     union
     {
 	float    f;
 	uint32_t u;
-    } acc_y;
+    } data_y;
     union
     {
 	float    f;
 	uint32_t u;
-    } acc_z;
+    } data_z;
     union
     {
 	float    f;
@@ -140,36 +141,6 @@ uint8_t imu_addr[3] =
 };
 
 #define IMU_MAG_ADDR     (0x0C)
-
-void icm_get_imu_data(icm_imu_data_t *imu_data)
-{
-    /*
-     * Get device ID and packet length.
-     */
-    imu_data->device_id = imuRawData.device_id;
-    imu_data->packet_length = imuRawData.packet_len;
-
-    /*
-     * Get data from the accelerometer.
-     */
-    imu_data->acc_x.u = imuRawData.acc_x.u;
-    imu_data->acc_y.u = imuRawData.acc_y.u;
-    imu_data->acc_z.u = imuRawData.acc_z.u;
-
-    /*
-     * Get data from the gyroscope.
-     */
-    imu_data->gyr_x.u = imuRawData.gyr_x.u;
-    imu_data->gyr_y.u = imuRawData.gyr_y.u;
-    imu_data->gyr_z.u = imuRawData.gyr_z.u;
-
-    /*
-     * Get data from the magnetometer.
-     */
-    imu_data->mag_x.u = imuRawData.mag_x.u;
-    imu_data->mag_y.u = imuRawData.mag_y.u;
-    imu_data->mag_z.u = imuRawData.mag_z.u;
-}
 
 static void gpio_cfg(uint32_t pin, uint32_t cfg)
 {
@@ -454,72 +425,64 @@ static int16_t convert( const uint8_t r1, const uint8_t r2 )
     return (int16_t)(i);
 }
 
-
-extern void readAccelData(uint8_t imu_number)
+/*
+ * @brief Read sensor data from the IMU.
+ *
+ * @param reg         - Register to read from, supported registers:
+ *                      ICM_ACCEL_XOUT_H, ICM_GYRO_XOUT_H or ICM_AK_HXL
+ *        sensor_type - Which type of sensor data to read, supported types:
+ *                      IMU_ACCELEROMETER, IMU_GYROSCOPE or IMU_MAGNETOMETER
+ *        imu_number  - Which IMU to read data from, supported ID's:
+ *                      IMU1, IMU2 or IMU3
+ */
+extern void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
     uint8_t rawData[6];
+    uint8_t device_id = (sensor_type + imu_number);
+    ret_code_t err_code = GENERAL_FAILURE;
+    if (sensor_type == IMU_MAGNETOMETER)
+    {
+	ConfMagnData1(imu_number);
+	readSensorData(p_sensor_service, reg, sensor_type, imu_number, imu_data);
+	ConfMagnData2(imu_number);
+    }
+    else
+    {
+	/*
+	 * Read the six raw data registers into data array
+	 */
+	io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
+	io_i2cRx(imu_addr[imu_number], rawData, 6);
 
-    /*
-     * Read the six raw data registers into data array
-     */
-    char reg = ICM_ACCEL_XOUT_H;
-    io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
-    io_i2cRx(imu_addr[imu_number], rawData, 6);
+	/*
+	 * Get device ID and packet length.
+	 */
+	imu_data->device_id = device_id;
+	imu_data->packet_length = sizeof(imu_data);
+    
+	/*
+	 * Get data from the sensor and
+	 * turn the MSB and LSB into a signed 16-bit value
+	 */
+	imu_data->data_x.u = ((int16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
+	imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
+	imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
 
-    /*
-     * Set device id and packet length.
-     */
-    imuRawData.device_id = (0x30 + imu_number);
-    imuRawData.packet_len = 0xe; // Todo: set the length of the packet dynamically.
-
-    /*
-     * Turn the MSB and LSB into a signed 16-bit value
-     */
-    imuRawData.acc_x.f = ((int16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
-    imuRawData.acc_y.f = ((int16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
-    imuRawData.acc_z.f = ((int16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
-    NRF_LOG_DEBUG("Accelerometer(0x%x) len=%d int16 = %d, %d, %d\n",
-		  imuRawData.device_id,
-		  imuRawData.packet_len,
-		  imuRawData.acc_x.u, imuRawData.acc_y.u, imuRawData.acc_z.u);
+	NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d\n",
+		      imu_data->device_id,
+		      imu_data->packet_length,
+		      imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
+    }
+    err_code = data_stream_update(p_sensor_service,
+				  imu_data);
 }
 
-extern void readGyroData(uint8_t imu_number)
+extern void ConfMagnData1(uint8_t imu_number)
 {
-    uint8_t rawData[6];
-
-    /*
-     * Read the six raw data registers into data array
-     */
-    char reg = ICM_GYRO_XOUT_H;
-    io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
-    io_i2cRx(imu_addr[imu_number], rawData, 6);
-
-    /*
-     * Set device id and packet length.
-     */
-    imuRawData.device_id = (0x40 + imu_number);
-    imuRawData.packet_len = 0xe; // Todo: set the length of the packet dynamically.
-
-    /*
-     * Turn the MSB and LSB into a signed 16-bit value
-     */
-    imuRawData.gyr_x.f = ((uint16_t)convert(rawData[0], rawData[1])) * 0x1p-8f;
-    imuRawData.gyr_y.f = ((uint16_t)convert(rawData[2], rawData[3])) * 0x1p-8f;
-    imuRawData.gyr_z.f = ((uint16_t)convert(rawData[4], rawData[5])) * 0x1p-8f;
-    NRF_LOG_DEBUG("Gyroscope(0x%x) len=%d int16 = %d, %d, %d\n",
-		  imuRawData.device_id,
-		  imuRawData.packet_len,
-		  imuRawData.gyr_x.u, imuRawData.gyr_y.u, imuRawData.gyr_z.u);
-}
-
-extern void readMagnData(uint8_t imu_number)
-{
-    uint8_t rawData[8];
     char reg = 0;
     char data;
-
     char reg_addr = ICM_REG_BANK_SEL;
+
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_3));
 
     reg_addr = ICM_I2C_SLV0_CTRL;
@@ -532,12 +495,29 @@ extern void readMagnData(uint8_t imu_number)
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, data));
     reg_addr = ICM_I2C_SLV0_CTRL;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, 0x81));
-    char reg1 = ICM_AK_ST1;
+}
+
+extern void ConfMagnData2(uint8_t imu_number)
+{
+    char data;
+    uint8_t reg_addr = ICM_REG_BANK_SEL;
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_0));
+   
+    nrf_delay_ms(1);
+}
+
+// char reg = ICM_AK_HXL
+extern void readMagnSensor(char reg, uint8_t imu_number, icm_imu_data_t *imu_data)
+{
+    uint8_t device_id = (0x50 + imu_number);
+    uint8_t mag_status_reg = ICM_AK_ST1;
     uint8_t statusData = 0;
-    io_i2cTx(IMU_MAG_ADDR, &reg1, 1, TX_NO_STOP);
-    if (io_i2cRx(IMU_MAG_ADDR, &statusData, 1) & 0x01)
+    uint8_t rawData[8];
+
+    io_i2cTx(IMU_MAG_ADDR, &mag_status_reg, 1, TX_NO_STOP);
+    io_i2cRx(IMU_MAG_ADDR, &statusData, 1);
+    if (((statusData, 1) & 0x01) != 0)
     {
-	char reg = ICM_AK_HXL;
 	io_i2cTx(IMU_MAG_ADDR, &reg, 1, TX_NO_STOP);
 	io_i2cRx(IMU_MAG_ADDR, rawData, 8);
 	uint8_t c = rawData[7];	
@@ -546,25 +526,21 @@ extern void readMagnData(uint8_t imu_number)
 	    /*
 	     * Set device id and packet length.
 	     */
-	    imuRawData.device_id = (0x50 + imu_number);
-	    imuRawData.packet_len = 0xe; // Todo: set the length of the packet dynamically.
+	    imu_data->device_id = device_id;
+	    imu_data->packet_length = sizeof(imu_data);// 0xe;
 
 	    /*
 	     * Turn the MSB and LSB into a signed 16-bit value
 	     */
-	    imuRawData.mag_x.f = ((int16_t)convert(rawData[1], rawData[0])) * 0x1p-8f;
-	    imuRawData.mag_y.f = ((int16_t)convert(rawData[3], rawData[2])) * 0x1p-8f;
-	    imuRawData.mag_z.f = ((int16_t)convert(rawData[5], rawData[4])) * 0x1p-8f;
+	    imu_data->data_x.f = ((int16_t)convert(rawData[1], rawData[0])) * 0x1p-8f;
+	    imu_data->data_y.f = ((int16_t)convert(rawData[3], rawData[2])) * 0x1p-8f;
+	    imu_data->data_z.f = ((int16_t)convert(rawData[5], rawData[4])) * 0x1p-8f;
             NRF_LOG_DEBUG("Magnetometer(0x%x) len=%d int16 = %d, %d, %d\n",
-                          imuRawData.device_id,
-                          imuRawData.packet_len,
-                          imuRawData.mag_x.u, imuRawData.mag_y.u, imuRawData.mag_z.u);
+                          imu_data->device_id,
+                          imu_data->packet_length,
+                          imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
 	}
     }
-    reg_addr = ICM_REG_BANK_SEL;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], &reg_addr, 1, ICM_USER_BANK_0));
-    
-    nrf_delay_ms(1);
 }
 
 extern void readEulerData(uint8_t number)

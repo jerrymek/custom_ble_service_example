@@ -251,80 +251,18 @@
  * End Register map for AK09916
  */
 
-#define IMU1 0
-#define IMU2 1
-#define IMU3 2
+#define IMU_ACCELEROMETER 0
+#define IMU_GYROSCOPE     1
+#define IMU_MAGNETOMETER  2
+
+#define IMU_DEVICE_1 0
+#define IMU_DEVICE_2 1
+#define IMU_DEVICE_3 2
 
 #define TX_NO_STOP       1 // TX transfer will not end with a stop condition.
 #define TX_MAY_STOP      0 // TX transfer may end with a stop condition.
 
 #define REC_BUF_LEN 54     /*  3 IMU:r * 3 sensors * 3 axis * 2 bytes */
-
-typedef struct
-{
-    uint8_t device_id;      /* 0x30 - 0x32, 0x40 - 0x42, 0x50 - 0x52, 0x60 - 0x62 */
-    uint8_t packet_length; /* 14-242 bytes (2 + n*12) */
-    union
-    {
-	float    f;
-	uint32_t u;
-    } acc_x;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } acc_y;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } acc_z;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } gyr_x;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } gyr_y;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } gyr_z;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } mag_x;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } mag_y;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } mag_z;
-    union
-    {
-	float    f;
-	uint32_t  u;
-    } eul_x;
-    union
-    {
-	float    f;
-	uint32_t u;
-    } eul_y;
-    union
-    {
-	float    f;
-	uint32_t  u;
-    } eul_z;
-} icm_imu_data_t;
 
 /**
  * @brief Initialize both I2C channels
@@ -435,7 +373,12 @@ void icmReadTempData(uint8_t imu_addr);
  * @param int16_t * destination
  * @return -
  */
-void readAccelData(uint8_t imu_addr);
+extern void readAccelData(uint8_t imu_addr);
+
+void ConfMagnData1(uint8_t imu_number);
+extern void ConfMagnData1(uint8_t imu_number);
+extern void ConfMagnData2(uint8_t imu_number);
+void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
 
 /**
  * @brief Read gyroscope raw data from device

@@ -46,13 +46,13 @@
 #include <stdint.h>
 #include <string.h>
 #include "nrf_gpio.h"
-#include "sensor_service.h"
 #include "ble_srv_common.h"
 #include "app_error.h"
 #include "nrf_log.h"
 #include "nrf_log_ctrl.h"
 #include "nrf_log_default_backends.h"
 #include "log_support.h"
+#include "sensor_service.h"
 
 // Declaration of a function that will take care of some housekeeping of ble
 // connections related to the Sensor Service and its characteristics.
@@ -170,22 +170,45 @@ void sensor_service_init(ble_ss_t * p_sensor_service)
 }
 
 uint32_t data_stream_update(ble_ss_t *p_sensor_service,
-			    uint8_t *buf)
+			    icm_imu_data_t *imu_data)
 {
     uint32_t err_code = 0;
-    if (p_sensor_service->conn_handle != BLE_CONN_HANDLE_INVALID)
-    {
-	ble_gatts_hvx_params_t hvx_params;
-	memset(&hvx_params, 0, sizeof(hvx_params));
-        uint16_t packet_length = buf[1];
-	hvx_params.handle = p_sensor_service->char_handles.value_handle;
-	hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
-	hvx_params.offset = 0;
-	hvx_params.p_len  = &packet_length;
-	hvx_params.p_data = buf;
 
-	err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
-    }
+    uint8_t imu_buf[0xe] = { 0x00, 0x0e,
+			     0x02, 0x03, 0x04, 0x05,
+			     0x06, 0x07, 0x08, 0x09,
+			     0x0a, 0x0b, 0x0c, 0x0d };
+    imu_buf[ 0] = imu_data->device_id;
+    imu_buf[ 1] = imu_data->packet_length;
+    imu_buf[ 2] = (imu_data->data_x.u >> 24) & 0xff;
+    imu_buf[ 3] = (imu_data->data_x.u >> 16) & 0xff;
+    imu_buf[ 4] = (imu_data->data_x.u >>  8) & 0xff;
+    imu_buf[ 5] = (imu_data->data_x.u      ) & 0xff;
+    imu_buf[ 6] = (imu_data->data_y.u >> 24) & 0xff;
+    imu_buf[ 7] = (imu_data->data_y.u >> 16) & 0xff;
+    imu_buf[ 8] = (imu_data->data_y.u >>  8) & 0xff;
+    imu_buf[ 9] = (imu_data->data_y.u      ) & 0xff;
+    imu_buf[10] = (imu_data->data_z.u >> 24) & 0xff;
+    imu_buf[11] = (imu_data->data_z.u >> 16) & 0xff;
+    imu_buf[12] = (imu_data->data_z.u >>  8) & 0xff;
+    imu_buf[13] = (imu_data->data_z.u      ) & 0xff;
+    do
+    {
+	if (p_sensor_service->conn_handle != BLE_CONN_HANDLE_INVALID)
+	{
+	    ble_gatts_hvx_params_t hvx_params;
+	    memset(&hvx_params, 0, sizeof(hvx_params));
+	    uint16_t packet_length = imu_buf[1];
+	    hvx_params.handle = p_sensor_service->char_handles.value_handle;
+	    hvx_params.type   = BLE_GATT_HVX_NOTIFICATION;
+	    hvx_params.offset = 0;
+	    hvx_params.p_len  = &packet_length;
+	    hvx_params.p_data = imu_buf;
+
+	    err_code = sd_ble_gatts_hvx(p_sensor_service->conn_handle, &hvx_params);
+	}
+    } while (err_code == NRF_ERROR_BUSY);
+
     return err_code;
 }
 

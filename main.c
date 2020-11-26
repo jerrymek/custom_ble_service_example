@@ -92,8 +92,8 @@
 #include "log_support.h"
 
 #include "our_service.h"
-#include "sensor_service.h"
 #include "nrf_drv_spi.h"
+#include "sensor_service.h"
 #include "ads1298_drv.h"
 #include "icm20948_drv.h"
 
@@ -152,6 +152,8 @@ static ble_uuid_t m_adv_uuids[] =                                               
     {BLE_UUID_SENSOR_SERVICE_UUID, BLE_UUID_TYPE_VENDOR_BEGIN}
 };
 
+ble_ss_t m_sensor_service;
+
 #ifdef USE_AUTHORIZATION_CODE
 static uint8_t m_auth_code[] = {'A', 'B', 'C', 'D'}; //0x41, 0x42, 0x43, 0x44
 static int m_auth_code_len = sizeof(m_auth_code);
@@ -193,38 +195,58 @@ static void timer_timeout_our_handler(void * p_context)
     nrf_gpio_pin_toggle(LED_4);
 }
 
+static uint8_t acc_number = 0;
+static uint8_t gro_number = 1;
+static uint8_t mag_number = 2;
+static uint8_t device_identifier = 3;
+static uint8_t buf_index = 0;
 static void timer_timeout_sensor_handler(void * p_context)
 {
     uint32_t err_code = 0;
-    static uint8_t buf_index;
+    icm_imu_data_t imu_data;
     if((buf_index % 2) == 0)
     {
-	nrf_gpio_pin_toggle(LED_3);
-	icm_get_imu_data(&main_imu_data);
-	uint8_t imu_buf[0xe] = { 0x00, 0x0e,
-				 0x02, 0x03, 0x04, 0x05,
-				 0x06, 0x07, 0x08, 0x09,
-				 0x0a, 0x0b, 0x0c, 0x0d };
-	imu_buf[ 0] = main_imu_data.device_id;
-	imu_buf[ 1] = main_imu_data.packet_length;
-	imu_buf[ 2] = (main_imu_data.acc_x.u >> 24) & 0xff;
-	imu_buf[ 3] = (main_imu_data.acc_x.u >> 16) & 0xff;
-	imu_buf[ 4] = (main_imu_data.acc_x.u >>  8) & 0xff;
-	imu_buf[ 5] = (main_imu_data.acc_x.u      ) & 0xff;
-	imu_buf[ 6] = (main_imu_data.acc_y.u >> 24) & 0xff;
-	imu_buf[ 7] = (main_imu_data.acc_y.u >> 16) & 0xff;
-	imu_buf[ 8] = (main_imu_data.acc_y.u >>  8) & 0xff;
-	imu_buf[ 9] = (main_imu_data.acc_y.u      ) & 0xff;
-	imu_buf[10] = (main_imu_data.acc_z.u >> 24) & 0xff;
-	imu_buf[11] = (main_imu_data.acc_z.u >> 16) & 0xff;
-	imu_buf[12] = (main_imu_data.acc_z.u >>  8) & 0xff;
-	imu_buf[13] = (main_imu_data.acc_z.u      ) & 0xff;
+    	if (device_identifier == (3))
+    	{
+	    readSensorData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
+	    if(acc_number < 2)
+	    {
+		acc_number++;
+	    }
+	    else
+	    {
+		acc_number = 0;
+	    }
+	    device_identifier = 4;
+    	}
+    	else if (device_identifier == (4))
+    	{
+    	    readSensorData(&m_sensor_service, ICM_GYRO_XOUT_H, IMU_GYROSCOPE, gro_number, &imu_data);
+    	    if(gro_number < 2)
+    	    {
+    		gro_number++;
+    	    }
+    	    else
+    	    {
+    		gro_number = 0;
+    	    }
+	    device_identifier = 5;
+    	}
+    	else // if (device_identifier == (5))
+    	{
+	    readSensorData(&m_sensor_service, ICM_AK_ST1, IMU_MAGNETOMETER, mag_number, &imu_data);
+    	    if(mag_number < 2)
+    	    {
+    		mag_number++;
+    	    }
+    	    else
+    	    {
+    		mag_number = 0;
+    	    }
+    	    device_identifier == 3;
+    	}
 
-	do
-	{
-	    err_code = data_stream_update(&m_sensor_service,
-					  imu_buf);
-	} while (err_code == NRF_ERROR_BUSY);
+	nrf_gpio_pin_toggle(LED_3);
     }
     else
     {
@@ -236,11 +258,11 @@ static void timer_timeout_sensor_handler(void * p_context)
 	emg_buf[1] = 4;
 	emg_buf[2] = ((main_emg_data.chan1.u) >> 8) & 0xff;
 	emg_buf[3] = ((main_emg_data.chan1.u)) & 0xff;
-	do
-	{
-	    err_code = data_stream_update(&m_sensor_service,
-					  emg_buf);
-	} while (err_code == NRF_ERROR_BUSY);
+	//do
+	//{
+	//    err_code = data_stream_update(&m_sensor_service,
+	//				  emg_buf);
+	//} while (err_code == NRF_ERROR_BUSY);
     }
 // Todo:   MY_ERROR_CHECK(err_code);
 //    MY_ERROR_LOG(err_code);
@@ -310,7 +332,8 @@ static void delete_bonds(void)
     NRF_LOG_INFO("Erase bonds!");
 
     err_code = pm_peers_delete();
-    MY_ERROR_CHECK(err_code);}
+    MY_ERROR_CHECK(err_code);
+}
 
 
 /**@brief Function for starting advertising.
@@ -556,7 +579,8 @@ static void gap_params_init(void)
     gap_conn_params.conn_sup_timeout  = CONN_SUP_TIMEOUT;
 
     err_code = sd_ble_gap_ppcp_set(&gap_conn_params);
-    MY_ERROR_CHECK(err_code);}
+    MY_ERROR_CHECK(err_code);
+}
 
 
 /**@brief Function for initializing the GATT module.
@@ -1113,46 +1137,16 @@ int main(void)
 
 
     icmInitI2c();
-    icmDeviceReset(IMU1);
-    icmReadChipId(IMU1);
-    icmInitiateIcm20948(IMU1);
-    icmInitiateAk09916(IMU1);
-    icmReadTempData(IMU1);
-    uint8_t acc_number = 0;
-    uint8_t gro_number = 1;
-    uint8_t mag_number = 2;
+    icmDeviceReset(IMU_DEVICE_1);
+    icmReadChipId(IMU_DEVICE_1);
+    icmInitiateIcm20948(IMU_DEVICE_1);
+    icmInitiateAk09916(IMU_DEVICE_1);
+    icmReadTempData(IMU_DEVICE_1);
     for (;;)
     {
 	idle_state_handle();
         bsp_board_led_invert(BSP_BOARD_LED_0);
-	nrf_delay_ms(1000);
-	readAccelData(acc_number);
-	if(acc_number < 2)
-	{
-	    acc_number++;
-	}
-	else
-	{
-	    acc_number = 0;
-	}
-	readGyroData(gro_number);
-	if(gro_number < 2)
-	{
-	    gro_number++;
-	}
-	else
-	{
-	    gro_number = 0;
-	}
-        readMagnData(mag_number); // Todo: why the strange values?
-	if(mag_number < 2)
-	{
-	    mag_number++;
-	}
-	else
-	{
-	    mag_number = 0;
-	}
+//	nrf_delay_ms(10);
     }
 }
 
