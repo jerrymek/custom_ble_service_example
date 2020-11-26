@@ -419,7 +419,7 @@ void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, ui
     imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3]));
     imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5]));
 
-    NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d\n",
+    NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d",
     		  imu_data->device_id,
     		  imu_data->packet_length,
     		  imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);

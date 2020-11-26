@@ -263,7 +263,7 @@ static void timer_timeout_sensor_handler(void * p_context)
 					ads_buf);
 	} while (err_code == NRF_ERROR_BUSY);
 
-	NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d\n",
+	NRF_LOG_DEBUG("Sensor(0x%x) len=%d data = %d",
 		      ads_buf[0],
 		      ads_buf[1],
 		      ((ads_buf[2] << 8), ads_buf[3]));
@@ -564,7 +564,6 @@ static void timers_init(void)
     MY_ERROR_CHECK(err_code);
 
     // Initiate timer
-//    app_timer_create(&m_our_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_our_handler);
     app_timer_create(&m_sensor_char_timer_id, APP_TIMER_MODE_REPEATED, timer_timeout_sensor_handler);
 
 }
@@ -1160,6 +1159,7 @@ int main(void)
     {
 	idle_state_handle();
         bsp_board_led_invert(BSP_BOARD_LED_0);
+	ads_read_adc_data();
     }
 }
 

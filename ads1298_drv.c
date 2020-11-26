@@ -502,14 +502,14 @@ void ads_read_adc_data(void)
     chan2  = convert(rx_buf[6], rx_buf[7], rx_buf[8]);
     chan3  = convert(rx_buf[9], rx_buf[10], rx_buf[11]);
     chan4  = convert(rx_buf[12], rx_buf[13], rx_buf[14]);
-    chan5  = convert(rx_buf[15], rx_buf[16], rx_buf[17]);
-    chan6  = convert(rx_buf[18], rx_buf[19], rx_buf[20]);
-    chan7  = convert(rx_buf[21], rx_buf[22], rx_buf[23]);
-    chan8  = convert(rx_buf[24], rx_buf[25], rx_buf[26]);
+    /* chan5  = convert(rx_buf[15], rx_buf[16], rx_buf[17]); */
+    /* chan6  = convert(rx_buf[18], rx_buf[19], rx_buf[20]); */
+    /* chan7  = convert(rx_buf[21], rx_buf[22], rx_buf[23]); */
+    /* chan8  = convert(rx_buf[24], rx_buf[25], rx_buf[26]); */
 
 //    Todo: NRF_LOG_DEBUG("Status 0x%x", status);
 //    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1*47, chan2*47, chan3*47, chan4*47);
-    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1, chan2, chan3, chan4);
+//    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1, chan2, chan3, chan4);
     /* NRF_LOG_DEBUG("Channel 2 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan2)); */
     /* NRF_LOG_DEBUG("Channel 3 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan3)); */
     /* NRF_LOG_DEBUG("Channel 4 " NRF_LOG_FLOAT_MARKER, NRF_LOG_FLOAT(chan4)); */
