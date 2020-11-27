@@ -209,7 +209,7 @@ static void timer_timeout_sensor_handler(void * p_context)
     icm_imu_data_t imu_data;
     if((buf_index % 2) == 0)
     {
-#ifndef NO_IMU_PRESENT
+#ifndef IMU_NOT_PRESENT
     	if (imu_index == IMU_ACCELEROMETER)
     	{
 	    readSensorData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
@@ -250,7 +250,7 @@ static void timer_timeout_sensor_handler(void * p_context)
     }
     else
     {
-#ifndef NO_EMG_PRESENT
+#ifndef EMG_NOT_PRESENT
 	nrf_gpio_pin_toggle(LED_4);
 	ads_get_channel_data(&main_emg_data);
 
@@ -1146,7 +1146,7 @@ int main(void)
 
     advertising_start(erase_bonds);
 
-#ifndef NO_EMG_PRESENT
+#ifndef EMG_NOT_PRESENT
     ads_init_gpio_pins();
     ads_init_spi();
     ads_power_up_sequence();
@@ -1154,20 +1154,22 @@ int main(void)
 			     PGA_GAIN_0);
 #endif
 
-#ifndef NO_IMU_PRESENT
+#ifndef IMU_NOT_PRESENT
     icmInitI2c();
     icmDeviceReset(IMU_DEVICE_1);
     icmReadChipId(IMU_DEVICE_1);
     icmInitiateIcm20948(IMU_DEVICE_1);
     icmInitiateAk09916(IMU_DEVICE_1);
     icmReadTempData(IMU_DEVICE_1);
+#endif
     for (;;)
     {
 	idle_state_handle();
         bsp_board_led_invert(BSP_BOARD_LED_0);
+#ifndef EMG_NOT_PRESENT
 	ads_read_adc_data();
-    }
 #endif
+    }
 }
 
 /**
