@@ -209,6 +209,7 @@ static void timer_timeout_sensor_handler(void * p_context)
     icm_imu_data_t imu_data;
     if((buf_index % 2) == 0)
     {
+#ifndef NO_IMU_PRESENT
     	if (imu_index == IMU_ACCELEROMETER)
     	{
 	    readSensorData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
@@ -245,9 +246,11 @@ static void timer_timeout_sensor_handler(void * p_context)
 	}
 
 	nrf_gpio_pin_toggle(LED_3);
+#endif
     }
     else
     {
+#ifndef NO_EMG_PRESENT
 	nrf_gpio_pin_toggle(LED_4);
 	ads_get_channel_data(&main_emg_data);
 
@@ -272,15 +275,16 @@ static void timer_timeout_sensor_handler(void * p_context)
 	{
 	    channel = 0;
 	}
-    }
-    if (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-    {
-	MY_ERROR_CHECK(err_code);
-    }
-    else
-    {
-	MY_ERROR_LOG(err_code);
-	NRF_LOG_DEBUG("BLE_ERROR_GATTS_SYS_ATTR_MISSING, enable notifications on your device!");
+	if (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
+	{
+	    MY_ERROR_CHECK(err_code);
+	}
+	else
+	{
+	    MY_ERROR_LOG(err_code);
+	    NRF_LOG_DEBUG("BLE_ERROR_GATTS_SYS_ATTR_MISSING, enable notifications on your device!");
+	}
+#endif
     }
     buf_index++;
 }
@@ -1142,13 +1146,15 @@ int main(void)
 
     advertising_start(erase_bonds);
 
+#ifndef NO_EMG_PRESENT
     ads_init_gpio_pins();
     ads_init_spi();
     ads_power_up_sequence();
     ads_configure_measurment(NORMAL_ELECTRODE_INPUT +
 			     PGA_GAIN_0);
+#endif
 
-
+#ifndef NO_IMU_PRESENT
     icmInitI2c();
     icmDeviceReset(IMU_DEVICE_1);
     icmReadChipId(IMU_DEVICE_1);
@@ -1161,6 +1167,7 @@ int main(void)
         bsp_board_led_invert(BSP_BOARD_LED_0);
 	ads_read_adc_data();
     }
+#endif
 }
 
 /**
