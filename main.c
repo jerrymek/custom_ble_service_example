@@ -271,7 +271,7 @@ static void timer_timeout_sensor_handler(void * p_context)
 		      ads_buf[1],
 		      ((ads_buf[2] << 8), ads_buf[3]));
 	channel++;
-	if( channel > 4 )
+	if( channel > 3 )
 	{
 	    channel = 0;
 	}
