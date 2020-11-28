@@ -25,27 +25,18 @@
 
 typedef struct
 {
-    union
-    {
-	float f;
-	uint16_t u;
-    } chan1;
-    union
-    {
-	float f;
-	uint16_t u;
-    } chan2;
-    union
-    {
-	float f;
-	uint16_t u;
-    } chan3;
-    union
-    {
-	float f;
-	uint16_t u;
-    } chan4;
+    uint16_t chan1;
+    uint16_t chan2;
+    uint16_t chan3;
+    uint16_t chan4;
+
 } ads_emg_data_t;
+
+/*
+ * For an input range of +/-800mV, the least significant bit
+ * from the ADS has a weight of (1600 mV/(2^24-1) bits)=96 nV.
+ */
+#define ADS_LSB_WEIGHT 96;
 
 void ads_init_gpio_pins(void);
 void ads_power_up_sequence(void);

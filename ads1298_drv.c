@@ -74,10 +74,14 @@
 #define CH7SET 0xB // (1) 00 PD7 GAIN72 GAIN71 GAIN70 0 MUX72 MUX71 MUX70
 #define CH8SET 0xC // (1) 00 PD8 GAIN82 GAIN81 GAIN80 0 MUX82 MUX81 MUX80
 #define POWER_DOWN             0x80 // 0=Normal operation, 1=Power down
-#define PGA_GAIN_2             0x40 // if bits 4, 5 and 6 are not set, i.e. PGA gain = 6.
-#define PGA_GAIN_1             0x20
-#define PGA_GAIN_0             0x10
-#define RESERVED_0x04          0x08 // Bit 3
+#define PGA_GAIN_2             0x40 // 000 = 6
+#define PGA_GAIN_1             0x20 // 001 = 1
+#define PGA_GAIN_0             0x10 // 010 = 2
+                                    // 011 = 3
+                                    // 100 = 4
+                                    // 101 = 8
+                                    // 110 = 12
+#define RESERVED_0x08          0x08 // Bit 3
 
 #define RLD_SENSP 0xD // (2) 00 RLD8P(1) RLD7P(1) RLD6P(1) RLD5P(1) RLD4P RLD3P RLD2P RLD1P
 #define RLD_SENSN 0xE // (2) 00 RLD8N(1) RLD7N(1) RLD6N(1) RLD5N(1) RLD4N RLD3N RLD2N RLD1N
@@ -174,10 +178,10 @@ int16_t chan8  = 0;
 
 void ads_get_channel_data(ads_emg_data_t *emg_data)
 {
-    emg_data->chan1.u = chan1;
-    emg_data->chan2.u = chan2;
-    emg_data->chan3.u = chan3;
-    emg_data->chan4.u = chan4;
+    emg_data->chan1 = chan1;
+    emg_data->chan2 = chan2;
+    emg_data->chan3 = chan3;
+    emg_data->chan4 = chan4;
 }
 
 /**
@@ -463,7 +467,15 @@ void ads_configure_shorted_input_measurment(void)
     ads_set_RDATAC();
 }
 
-static int16_t convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
+/**
+ * @brief Convert 24 bit signed integer to 16 bit signed integer.
+ * @description The data from the ADS data stream is in big endian format.
+ * The value is adjusted for the weight of the least significant bit.
+ * @param r1 - Most significant byte.
+ * @param r2 - 2nd Most significant byte.
+ * @param r2 - Least significant byte.
+ */
+static int16_t ads_convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
 {
     int32_t i = r1;
 
@@ -472,6 +484,8 @@ static int16_t convert( const uint8_t r1, const uint8_t r2, const uint8_t r3 )
 
     if (i & 0x800000)
 	i |= ~0xffffff;
+
+    i = i * ADS_LSB_WEIGHT;
 
     i = (i/0xff);
 
@@ -495,16 +509,24 @@ void ads_read_adc_data(void)
 {
     ads_set_SDATAC();
 
-// Todo:    ads_log_rx_buf();
-
     status = rx_buf[0]<<16 + rx_buf[1]<<8 + rx_buf[2];
-    chan1  = convert(rx_buf[3], rx_buf[4], rx_buf[5])*47;
-    chan2  = convert(rx_buf[6], rx_buf[7], rx_buf[8])*47;
-    chan3  = convert(rx_buf[9], rx_buf[10], rx_buf[11])*47;
-    chan4  = convert(rx_buf[12], rx_buf[13], rx_buf[14])*47;
+    chan1  = ads_convert(rx_buf[3], rx_buf[4], rx_buf[5]);
+    chan2  = ads_convert(rx_buf[6], rx_buf[7], rx_buf[8]);
+    chan3  = ads_convert(rx_buf[9], rx_buf[10], rx_buf[11]);
+    chan4  = ads_convert(rx_buf[12], rx_buf[13], rx_buf[14]);
+    /* NRF_LOG_DEBUG("Status: 0x%x, 0x%x, 0x%x", */
+    /* 		  rx_buf[0], rx_buf[1], rx_buf[2]); */
+    /* NRF_LOG_DEBUG("Channel 1: 0x%x, 0x%x, 0x%x, %d", */
+    /* 		  rx_buf[3], rx_buf[4], rx_buf[5], chan1); */
+    /* NRF_LOG_DEBUG("Channel 2: 0x%x, 0x%x, 0x%x, %d", */
+    /* 		  rx_buf[6], rx_buf[7], rx_buf[8], chan2); */
+    /* NRF_LOG_DEBUG("Channel 3: 0x%x, 0x%x, 0x%x, %d", */
+    /* 		  rx_buf[9], rx_buf[10], rx_buf[11], chan3); */
+    /* NRF_LOG_DEBUG("Channel 4: 0x%x, 0x%x, 0x%x, %d", */
+    /* 		  rx_buf[12], rx_buf[13], rx_buf[14], chan4); */
 
 #ifdef EMG_DEBUG
-    printf("Channel 1, 2, 3 and 4:  %d, %d, %d, %d\n", chan1, chan2, chan3, chan4);
+    printf("Channel 1, 2, 3 and 4: %d, %d, %d, %d\n", chan1, chan2, chan3, chan4);
 #endif
 
     ads_set_RDATAC();

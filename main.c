@@ -255,21 +255,45 @@ static void timer_timeout_sensor_handler(void * p_context)
 	ads_get_channel_data(&main_emg_data);
 
         uint8_t ads_buf[4] = { 0, 0, 0, 0 };
-	
+
 	ads_buf[0] = (0x10 + channel);
 	ads_buf[1] = 4;
-	ads_buf[2] = ((main_emg_data.chan1.u) >> 8) & 0xff;
-	ads_buf[3] = ((main_emg_data.chan1.u)) & 0xff;
+	if (channel == 0)
+	{
+	    ads_buf[2] = ((main_emg_data.chan1) >> 8) & 0xff;
+	    ads_buf[3] = ((main_emg_data.chan1)) & 0xff;
+	}
+	else if (channel == 1)
+	{
+	    ads_buf[2] = ((main_emg_data.chan2) >> 8) & 0xff;
+	    ads_buf[3] = ((main_emg_data.chan2)) & 0xff;
+	}
+	else if (channel == 2)
+	{
+	    ads_buf[2] = ((main_emg_data.chan3) >> 8) & 0xff;
+	    ads_buf[3] = ((main_emg_data.chan3)) & 0xff;
+	}
+	else if (channel == 3)
+	{
+	    ads_buf[2] = ((main_emg_data.chan4) >> 8) & 0xff;
+	    ads_buf[3] = ((main_emg_data.chan4)) & 0xff;
+	}
+	else
+	{
+	    // error
+	}
+
 	do
 	{
 	   err_code = ads_stream_update(&m_sensor_service,
 					ads_buf);
-	} while (err_code == NRF_ERROR_BUSY);
+	} while ((err_code == NRF_ERROR_BUSY) || (err_code == NRF_ERROR_RESOURCES));
 
+	int16_t emg_value = ((ads_buf[2] << 8) | ads_buf[3]);
 	NRF_LOG_DEBUG("Sensor(0x%x) len=%d data = %d",
 		      ads_buf[0],
 		      ads_buf[1],
-		      ((ads_buf[2] << 8), ads_buf[3]));
+		      emg_value);
 	channel++;
 	if( channel > 3 )
 	{
@@ -1151,7 +1175,7 @@ int main(void)
     ads_init_spi();
     ads_power_up_sequence();
     ads_configure_measurment(NORMAL_ELECTRODE_INPUT +
-			     PGA_GAIN_0);
+			     PGA_GAIN_0); // PGA gain = 1
 #endif
 
 #ifndef IMU_NOT_PRESENT

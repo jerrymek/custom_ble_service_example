@@ -1433,7 +1433,7 @@
 #ifndef SPI_MOSI_PIN
 #define SPI_MOSI_PIN     4 // to J3:11 (SPI_IN)
 #endif
-#ifndef ADS_PWDN_PIN
+#ifndef ADS_N_PWDN_PIN
 #define ADS_N_PWDN_PIN   7 // Connected from P0.7 to J5:5
 #endif
 #ifndef I2C_SDA2_PIN
@@ -1457,7 +1457,7 @@
 #ifndef SPI_DRDY_PIN
 #define SPI_DRDY_PIN    30 // to J3:15
 #endif
-#ifndef ADS_RESET_PIN
+#ifndef ADS_N_RESET_PIN
 #define ADS_N_RESET_PIN 31 // Connected from P0.31 to J3:8
 #endif
 
