@@ -137,8 +137,8 @@ void io_i2cSetChannel(uint8_t Channel)
     NRF_TWIM_Type * p_twim = m_twi.u.twim.p_twim;
 	
     nrf_twim_pins_set(p_twim,
-		      I2C_SDA1_PIN,
-		      I2C_SCL1_PIN);
+		      I2C_SCL1_PIN,
+		      I2C_SDA1_PIN);
 }
 
 nrfx_err_t io_i2cTx(uint8_t Address, const char *data, uint16_t Len, uint8_t noStop)
@@ -388,7 +388,7 @@ extern void icmReadTempData(uint8_t imu_number)
       
   // Read the two raw data registers sequentially into data array
   char reg = ICM_TEMP_OUT_H;
-  io_i2cTx(imu_addr[imu_number], &reg, 2, TX_NO_STOP);
+  io_i2cTx(imu_addr[imu_number], &reg, 1, TX_NO_STOP);
   io_i2cRx(imu_addr[imu_number], rawData, 2);
   NRF_LOG_DEBUG("rawData = 0x%02x%02x", rawData[0], rawData[1]);
 
