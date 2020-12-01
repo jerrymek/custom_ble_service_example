@@ -1184,7 +1184,7 @@ int main(void)
     icmReadChipId(IMU_DEVICE_1);
     icmInitiateIcm20948(IMU_DEVICE_1);
     icmInitiateAk09916(IMU_DEVICE_1);
-    icmReadTempData(IMU_DEVICE_1);
+//    icmReadTempData(IMU_DEVICE_1);
 #endif
     for (;;)
     {

@@ -166,6 +166,7 @@ void icmDeviceReset(uint8_t imu_number)
     tx_buf[1] = ICM_PWR_MGMT_1_DEVICE_RESET;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
     nrf_delay_ms(200);
+    NRF_LOG_DEBUG("ICM 20948 reset done.");
 }
 
 extern void icmReadChipId(uint8_t imu_number)
