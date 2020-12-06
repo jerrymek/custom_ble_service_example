@@ -232,7 +232,7 @@ static void timer_timeout_sensor_handler(void * p_context)
     	}
     	else if (imu_index == IMU_MAGNETOMETER)
     	{
-	    readSensorData(&m_sensor_service, ICM_AK_ST1, IMU_MAGNETOMETER, mag_number, &imu_data);
+	    readSensorData(&m_sensor_service, ICM_EXT_SLV_SENS_DATA_01, IMU_MAGNETOMETER, mag_number, &imu_data);
 	    mag_number++;
     	    if(mag_number > IMU_DEVICE_3)
     	    {

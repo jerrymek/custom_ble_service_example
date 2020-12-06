@@ -325,6 +325,7 @@ extern void icmInitiateAk09916(uint8_t imu_number)
 
     writeMagnReg(imu_number, ICM_AK_CNTL3, 0x01);
     nrf_delay_us(100);
+    writeMagnReg(imu_number, ICM_AK_CNTL2, 0x80); // 100 Hz
     nrf_delay_ms(10);
     readMagContinuous(imu_number, ICM_ACCEL_XOUT_H, 6);
     //compass_scale = 0.15;
@@ -419,7 +420,7 @@ static int16_t convert( const uint8_t r1, const uint8_t r2 )
 
 void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
-    uint8_t rawData[6];
+    uint8_t rawData[6]; // acc 6 + gyro 6 + temp 2 + sta1 1 + mag 6 + sta2 1
     uint8_t device_id = (sensor_type | imu_number);
 
     /*
@@ -535,9 +536,9 @@ extern void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_
     ret_code_t err_code = GENERAL_FAILURE;
     if (sensor_type == IMU_MAGNETOMETER)
     {
-	ConfMagnData1(imu_number);
-	readMagnSensor(p_sensor_service, reg, sensor_type, imu_number, imu_data);
-	ConfMagnData2(imu_number);
+    	ConfMagnData1(imu_number);
+    	readMagnSensor(p_sensor_service, reg, sensor_type, imu_number, imu_data);
+    	ConfMagnData2(imu_number);
     }
     else
     {
