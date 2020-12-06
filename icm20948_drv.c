@@ -143,12 +143,14 @@ void io_i2cSetChannel(uint8_t Channel)
 
 nrfx_err_t io_i2cTx(uint8_t Address, const char *data, uint16_t Len, uint8_t noStop)
 {
-    return nrf_drv_twi_tx(&m_twi, Address, data, Len, noStop);
+    ret_code_t rc = nrf_drv_twi_tx(&m_twi, Address, data, Len, noStop);
+    return rc;
 }
 
 nrfx_err_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len)
 {
-    return nrf_drv_twi_rx(&m_twi, Address, dest, Len);
+    ret_code_t rc = nrf_drv_twi_rx(&m_twi, Address, dest, Len);
+    return rc;
 }
 
 void icmInitI2c(void)
@@ -160,12 +162,18 @@ void icmInitI2c(void)
 void icmDeviceReset(uint8_t imu_number)
 {
     char tx_buf[2] = { ICM_REG_BANK_SEL, ICM_USER_BANK_0 };
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_MAY_STOP));
 
     tx_buf[0] = ICM_PWR_MGMT_1;
     tx_buf[1] = ICM_PWR_MGMT_1_DEVICE_RESET;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
-    nrf_delay_ms(200);
+
+    nrf_delay_ms(100);
+
+    tx_buf[0] = ICM_PWR_MGMT_1;
+    tx_buf[1] = ICM_PWR_MGMT_1_CLKSEL_0x1; // Auto clock select
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
+
     NRF_LOG_DEBUG("ICM 20948 reset done.");
 }
 
@@ -285,8 +293,6 @@ void readMagContinuous(uint8_t imu_number, char reg, char length)
     tx_buf[0] = ICM_REG_BANK_SEL;
     tx_buf[1] = ICM_USER_BANK_0;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
-    
-    nrf_delay_ms(1);
 }
 
 extern void icmInitiateAk09916(uint8_t imu_number)
@@ -299,9 +305,9 @@ extern void icmInitiateAk09916(uint8_t imu_number)
     char result[1] = {0};
     MY_ERROR_CHECK(io_i2cRx(imu_addr[imu_number], result, 1));
     NRF_LOG_DEBUG("%s(%d) result = 0x%x", __FILENAME__, __LINE__, *result);
-    tx_buf[0] = ICM_USER_CTRL;
-    tx_buf[1] = result[1] |= 0x20;
-    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
+    /* tx_buf[0] = ICM_USER_CTRL; */
+    /* tx_buf[1] = result[1] |= 0x20; */
+    /* MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP)); */
 
     tx_buf[0] = ICM_REG_BANK_SEL;
     tx_buf[1] = ICM_USER_BANK_3;
@@ -352,8 +358,6 @@ void readMagnReg (uint8_t imu_number, uint8_t reg, uint8_t length)
     tx_buf[0] = ICM_REG_BANK_SEL;
     tx_buf[1] = ICM_USER_BANK_0;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
-
-    nrf_delay_ms(1);
 
     tx_buf[0] = ICM_EXT_SLV_SENS_DATA_00;
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 1, TX_NO_STOP));
