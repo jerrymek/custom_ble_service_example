@@ -150,7 +150,7 @@
 /*
  * USER BANK 2
  */
-#define ICM_USER_BANK_2   0x20;
+#define ICM_USER_BANK_2   0x20
 #define ICM_GYRO_SMPLRT_DIV           0x00  // R/W GYRO_SMPLRT_DIV[7:0]
 #define ICM_GYRO_CONFIG_1   0x01  // R/W
 #define ICM_GYRO_CONFIG_1_RESERVED_7   0x80
