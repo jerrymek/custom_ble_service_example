@@ -185,7 +185,7 @@ void readRegs (uint8_t imu_number, uint8_t reg, uint8_t *data, uint8_t length)
     }
 }
 
-extern void icmReadChipId(uint8_t imu_number)
+void icmReadChipId(uint8_t imu_number)
 {
     uint8_t result = 0;
     readReg (imu_number, ICM_WHO_AM_I, &result);
@@ -292,7 +292,7 @@ void readMagContinuous(uint8_t imu_number, char reg, char length)
     writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
 }
 
-extern void icmInitiateAk09916(uint8_t imu_number)
+void icmInitiateAk09916(uint8_t imu_number)
 {
     writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
     clearBits(imu_number, ICM_INT_PIN_CFG, ICM_INT_PIN_CFG_BYPASS_EN); // Disable pass through
@@ -416,7 +416,7 @@ void readMagnReg (uint8_t imu_number, uint8_t reg, uint8_t length)
  * Sensitivity Untrimmed typical: 333.87 LSB/°C 1
  * Room Temp Offset at 21°C typical: 0 LSB
  */
-extern void icmReadTempData(uint8_t imu_number)
+void icmReadTempData(uint8_t imu_number)
 {
   int16_t  TEMP_OUT = 0;
   int16_t  TEMP_degC = 0;
@@ -476,7 +476,7 @@ void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, ui
     		  imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
 }
 
-extern void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
+void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
     uint8_t device_id = (sensor_type + imu_number);
     uint8_t statusData = 0;
@@ -531,7 +531,7 @@ extern void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_
  *        imu_number  - Which IMU to read data from, supported ID's:
  *                      IMU1, IMU2 or IMU3
  */
-extern void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
+void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
     ret_code_t err_code = GENERAL_FAILURE;
     if (sensor_type == IMU_MAGNETOMETER)
@@ -551,7 +551,7 @@ extern void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_
 			         imu_data);
 }
 
-extern void readEulerData(uint8_t number)
+void readEulerData(uint8_t number)
 {
     // Todo: Not implemented yet
 }

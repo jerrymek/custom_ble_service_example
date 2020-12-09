@@ -332,12 +332,12 @@
  * @brief Initialize both I2C channels
  * Used ports SDA and SCL must been configured first
  */
-extern ret_code_t io_i2cInit();
+ret_code_t io_i2cInit();
 
 /**
  * @brief Set I2C channel
  */
-extern void io_i2cSetChannel(uint8_t Channel);
+void io_i2cSetChannel(uint8_t Channel);
 
 /**
  * @brief I2C Transmit 
@@ -347,7 +347,7 @@ extern void io_i2cSetChannel(uint8_t Channel);
  * @param Len = length of data to send 
  * @param noStop = TX will not end with a stop condition
  */
-extern nrfx_err_t io_i2cTx(uint8_t Address, const char *data, uint16_t Len, uint8_t noStop);
+nrfx_err_t io_i2cTx(uint8_t Address, const char *data, uint16_t Len, uint8_t noStop);
 
 /**
  * @brief I2C Read
@@ -357,7 +357,7 @@ extern nrfx_err_t io_i2cTx(uint8_t Address, const char *data, uint16_t Len, uint
  * @param Len = required length of the received data
  * @return = zero mean not all required data ready
  */
-extern nrfx_err_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len);
+nrfx_err_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len);
 
 /**
  * @brief Initiate I2C
@@ -365,7 +365,7 @@ extern nrfx_err_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len);
  * @param -
  * @return -
  */
-extern void icmInitI2c(void);
+void icmInitI2c(void);
 
 /**
  * @brief Initiate Device
@@ -373,7 +373,7 @@ extern void icmInitI2c(void);
  * @param -
  * @return -
  */
-extern void icmInitiateDevice(uint8_t imu_addr);
+void icmInitiateDevice(uint8_t imu_addr);
 
 /**
  * @brief Initiate Icm20948
@@ -381,7 +381,7 @@ extern void icmInitiateDevice(uint8_t imu_addr);
  * @param -
  * @return -
  */
-extern void icmInitiateIcm20948(uint8_t imu_addr);
+void icmInitiateIcm20948(uint8_t imu_addr);
 
 /**
  * @brief Initiate AK09916
@@ -389,7 +389,7 @@ extern void icmInitiateIcm20948(uint8_t imu_addr);
  * @param -
  * @return -
  */
-extern void icmInitiateAk09916(uint8_t imu_addr);
+void icmInitiateAk09916(uint8_t imu_addr);
 
 /**
  * @brief Read chip ID
@@ -397,7 +397,7 @@ extern void icmInitiateAk09916(uint8_t imu_addr);
  * @param -
  * @return -
  */
-extern void icmReadChipId(uint8_t imu_addr);
+void icmReadChipId(uint8_t imu_addr);
 
 /**
  * @brief Read magnetometer data
@@ -405,7 +405,7 @@ extern void icmReadChipId(uint8_t imu_addr);
  * @param -
  * @return -
  */
-extern void readMagnReg (uint8_t imu_addr, uint8_t reg, uint8_t length);
+void readMagnReg (uint8_t imu_addr, uint8_t reg, uint8_t length);
 
 /**
  * @brief Write magnetometer data
@@ -437,7 +437,7 @@ void icmReadTempData(uint8_t imu_addr);
  * @param int16_t * destination
  * @return -
  */
-extern void readAccelData(uint8_t imu_addr);
+void readAccelData(uint8_t imu_addr);
 
 /**
  * @brief Set IMU in sleep mode
@@ -456,8 +456,8 @@ void icmSleepMode(uint8_t imu_number, bool mode);
 void icmSetLowPowerMode(uint8_t imu_number, bool mode);
 
 void ConfMagnData1(uint8_t imu_number);
-extern void ConfMagnData1(uint8_t imu_number);
-extern void ConfMagnData2(uint8_t imu_number);
+void ConfMagnData1(uint8_t imu_number);
+void ConfMagnData2(uint8_t imu_number);
 void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
 void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
 void readMagnetometerRegister(uint8_t imu_number,  uint8_t reg,  uint8_t *d);
