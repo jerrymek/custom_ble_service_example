@@ -21,6 +21,7 @@
 #define POWER_DOWN             0x80 // 0=Normal operation, 1=Power down
 #define PGA_GAIN_2             0x40 // if bits 4, 5 and 6 are not set, i.e. PGA gain = 6.
 #define PGA_GAIN_1             0x20
+#define PGA_GAIN_12            0xc0 // 110 = 12
 #define PGA_GAIN_0             0x10
 
 typedef struct

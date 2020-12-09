@@ -161,7 +161,7 @@
       Name="Debug"
       c_additional_options=""
       c_only_additional_options=""
-      c_preprocessor_definitions="EMG_NOT_PRESENT"
+      c_preprocessor_definitions="IMU_NOT_PRESENT"
       linker_section_placements_segments="FLASH RX 0x0 0x100000;RAM RWX 0x20000000 0x40000"
       macros="-D BASE_FILE_NAME=\\&quot;$*.c\\&quot;" />
   </project>

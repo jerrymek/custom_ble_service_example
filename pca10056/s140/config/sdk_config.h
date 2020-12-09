@@ -1436,6 +1436,9 @@
 #ifndef ADS_N_PWDN_PIN
 #define ADS_N_PWDN_PIN   7 // Connected from P0.7 to J5:5
 #endif
+#ifndef SPI_START_PIN
+#define SPI_START_PIN 	NRF_GPIO_PIN_MAP(1, 15) // Connected from P1.15 to J5:5
+#endif
 #ifndef I2C_SDA2_PIN
 #define I2C_SDA2_PIN    24 // (P0.24) I2C_SDA2_PIN
 #endif

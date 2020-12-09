@@ -143,13 +143,21 @@ void io_i2cSetChannel(uint8_t Channel)
 
 nrfx_err_t io_i2cTx(uint8_t Address, const char *data, uint16_t Len, uint8_t noStop)
 {
-    ret_code_t rc = nrf_drv_twi_tx(&m_twi, Address, data, Len, noStop);
+    ret_code_t rc = 0;
+    do
+    {
+	ret_code_t rc = nrf_drv_twi_tx(&m_twi, Address, data, Len, noStop);
+    } while (rc == NRF_ERROR_BUSY);
     return rc;
 }
 
 nrfx_err_t io_i2cRx(uint8_t Address, char *dest, uint16_t Len)
 {
-    ret_code_t rc = nrf_drv_twi_rx(&m_twi, Address, dest, Len);
+    ret_code_t rc = 0;
+    do
+    {
+	ret_code_t rc = nrf_drv_twi_rx(&m_twi, Address, dest, Len);
+    } while (rc == NRF_ERROR_BUSY);
     return rc;
 }
 
@@ -163,7 +171,7 @@ void writeReg (uint8_t imu_number, uint8_t reg, uint8_t data)
 {
     char tx_buf[2] = { reg, data };
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
-    NRF_LOG_DEBUG("%s(%d) writeReg: 0x%x, 0x%x", __FILENAME__, __LINE__, reg, data);
+//    NRF_LOG_DEBUG("%s(%d) writeReg: 0x%x, 0x%x", __FILENAME__, __LINE__, reg, data);
 }
 
 void readReg (uint8_t imu_number, uint8_t reg, uint8_t *data)
@@ -171,7 +179,7 @@ void readReg (uint8_t imu_number, uint8_t reg, uint8_t *data)
     char tx_buf[1] = { reg };
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 1, TX_NO_STOP));
     MY_ERROR_CHECK(io_i2cRx(imu_addr[imu_number], data, 1));
-    NRF_LOG_DEBUG("%s(%d) readReg: 0x%x, 0x%x", __FILENAME__, __LINE__, reg, *data);
+//    NRF_LOG_DEBUG("%s(%d) readReg: 0x%x, 0x%x", __FILENAME__, __LINE__, reg, *data);
 }
 
 void readRegs (uint8_t imu_number, uint8_t reg, uint8_t *data, uint8_t length)
@@ -179,10 +187,26 @@ void readRegs (uint8_t imu_number, uint8_t reg, uint8_t *data, uint8_t length)
     char tx_buf[1] = { reg };
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 1, TX_NO_STOP));
     MY_ERROR_CHECK(io_i2cRx(imu_addr[imu_number], data, length));
-    for (uint8_t i = 0; i < length; i++)
-    {
-	NRF_LOG_DEBUG("%s(%d) readReg: 0x%x, 0x%x", __FILENAME__, __LINE__, reg, data[i]);
-    }
+    /* for (uint8_t i = 0; i < length; i++) */
+    /* { */
+    /* 	NRF_LOG_DEBUG("%s(%d) readReg: 0x%x, 0x%x", __FILENAME__, __LINE__, reg, data[i]); */
+    /* } */
+}
+
+void setBits(uint8_t imu_number, uint8_t reg, uint8_t bits)
+{
+    uint8_t d = 0;
+    readReg(imu_number, reg, &d);
+    d |= bits;
+    writeReg (imu_number, reg, d);
+}
+
+void clearBits(uint8_t imu_number, uint8_t reg, uint8_t data)
+{
+    uint8_t d = 0;
+    readReg(imu_number, reg, &d);
+    d &= ~data;
+    writeReg (imu_number, reg, d);
 }
 
 void icmReadChipId(uint8_t imu_number)
@@ -233,22 +257,6 @@ void icmSetLowPowerMode(uint8_t imu_number, bool mode)
     }
     writeReg (imu_number, ICM_PWR_MGMT_1, d);
     NRF_LOG_DEBUG("ICM 20948 low power mode %d", mode);
-}
-
-void setBits(uint8_t imu_number, uint8_t reg, uint8_t bits)
-{
-    uint8_t d = 0;
-    readReg(imu_number, reg, &d);
-    d |= bits;
-    writeReg (imu_number, reg, d);
-}
-
-void clearBits(uint8_t imu_number, uint8_t reg, uint8_t data)
-{
-    uint8_t d = 0;
-    readReg(imu_number, reg, &d);
-    d &= ~data;
-    writeReg (imu_number, reg, d);
 }
 
 void icmInitiateIcm20948(uint8_t imu_number)
@@ -310,14 +318,13 @@ void icmInitiateAk09916(uint8_t imu_number)
 	if ((mag_id[ICM_AK_WIA1] == MAG_AK09916_WHO_AM_I[0]) &&
 	    (mag_id[ICM_AK_WIA2] == MAG_AK09916_WHO_AM_I[1]))
 	{
+	    NRF_LOG_DEBUG("%s(%d) Found chip for the magneotmeter: 0x%x, 0x%x", __FILENAME__, __LINE__, mag_id[ICM_AK_WIA1], mag_id[ICM_AK_WIA2]);
 	    break;
 	}
 	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
 	setBits(imu_number, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_RST);
     }
 
-
-    
     writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
     writeReg (imu_number, ICM_I2C_MST_CTRL, 0x1D);
     writeReg (imu_number, ICM_I2C_MST_DELAY_CTRL, 0x01);
@@ -330,6 +337,7 @@ void icmInitiateAk09916(uint8_t imu_number)
     nrf_delay_ms(10);
     readMagContinuous(imu_number, ICM_ACCEL_XOUT_H, 6);
     //compass_scale = 0.15;
+    NRF_LOG_DEBUG("AK09916 initiated!");
 }
 
 void readMagnetometerRegister(uint8_t imu_number,  uint8_t reg,  uint8_t *d)
@@ -400,8 +408,8 @@ void readMagnReg (uint8_t imu_number, uint8_t reg, uint8_t length)
     writeMagnReg(imu_number, ICM_I2C_SLV0_DO, 0xff);
     writeMagnReg(imu_number, ICM_I2C_SLV0_CTRL, (0xD0 | length));
     writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-    uint8_t result[6] = { 0, 0, 0, 0, 0, 0 };
-    readRegs(imu_number, ICM_EXT_SLV_SENS_DATA_01, result, 6); // ICM_EXT_SLV_SENS_DATA_00 contains a status word.
+    uint8_t result[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    readRegs(imu_number, ICM_EXT_SLV_SENS_DATA_00, result, 8); // ICM_EXT_SLV_SENS_DATA_00 contains a status word.
                                                                // N.B. Magnetometer data is in little endian format.
 }
 
@@ -480,14 +488,14 @@ void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
 {
     uint8_t device_id = (sensor_type + imu_number);
     uint8_t statusData = 0;
-    uint8_t rawData[7];
+    uint8_t rawData[8];
 
     do {
 	readRegs(imu_number, ICM_AK_ST1, &statusData, 1);
     } while ((statusData & ICM_AK_ST1_DRDY) == ICM_AK_ST1_DRDY);
 
-    readRegs(imu_number, reg, rawData, 7);
-    uint8_t c = rawData[6]; // n.b. Little Endian!
+    readRegs(imu_number, reg, rawData, 8);
+    uint8_t c = rawData[7]; // n.b. Little Endian!
 
     if (!(c & 0x08))
     {
@@ -503,10 +511,12 @@ void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
 
 	/*
 	 * Turn the MSB and LSB into a signed 16-bit value
+	 * N.B. Little Endian!
+	 * Also skip data 0 (status 1) and 7 (status 2).
 	 */
-	imu_data->data_x.u = ((int16_t)rawData[0], rawData[1]);
-	imu_data->data_y.u = ((int16_t)rawData[2], rawData[3]);
-	imu_data->data_z.u = ((int16_t)rawData[4], rawData[5]);
+	imu_data->data_x.u = ((int16_t)rawData[2], rawData[1]);
+	imu_data->data_y.u = ((int16_t)rawData[4], rawData[3]);
+	imu_data->data_z.u = ((int16_t)rawData[6], rawData[5]);
 	/* imu_data->data_x.f = ((int16_t)convert(rawData[1], rawData[0])) * 0x1p-8f; */
 	/* imu_data->data_y.f = ((int16_t)convert(rawData[3], rawData[2])) * 0x1p-8f; */
 	/* imu_data->data_z.f = ((int16_t)convert(rawData[5], rawData[4])) * 0x1p-8f; */
@@ -538,8 +548,8 @@ void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
     {
 	writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
 	writeMagnReg(imu_number, ICM_I2C_SLV0_ADDR, (IMU_MAG_ADDR | ICM_I2C_SLV0_ADDR_READ_FLAG));
-	writeMagnReg(imu_number, ICM_I2C_SLV0_REG, (ICM_I2C_SLV0_REG, ICM_AK_HXL));
-	writeMagnReg(imu_number, ICM_I2C_SLV0_CTRL, (ICM_I2C_SLV0_CTRL_EN | 8));
+	writeMagnReg(imu_number, ICM_I2C_SLV0_REG, (ICM_I2C_SLV0_REG, IMU_MAG_ADDR));
+	writeMagnReg(imu_number, ICM_I2C_SLV0_CTRL, (ICM_I2C_SLV0_CTRL_EN | ICM_I2C_SLV0_ADDR_READ_FLAG));
     	readMagnSensor(p_sensor_service, reg, sensor_type, imu_number, imu_data);
 	writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
     }

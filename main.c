@@ -232,7 +232,7 @@ static void timer_timeout_sensor_handler(void * p_context)
     	}
     	else if (imu_index == IMU_MAGNETOMETER)
     	{
-	    readSensorData(&m_sensor_service, ICM_EXT_SLV_SENS_DATA_01, IMU_MAGNETOMETER, mag_number, &imu_data);
+	    readSensorData(&m_sensor_service, ICM_EXT_SLV_SENS_DATA_00, IMU_MAGNETOMETER, mag_number, &imu_data);
 	    mag_number++;
     	    if(mag_number > IMU_DEVICE_3)
     	    {
@@ -1171,8 +1171,8 @@ int main(void)
     ads_init_gpio_pins();
     ads_init_spi();
     ads_power_up_sequence();
-    ads_configure_measurment(NORMAL_ELECTRODE_INPUT +
-			     PGA_GAIN_0); // PGA gain = 1
+    ads_configure_measurment(INPUT_SHORTED + //NORMAL_ELECTRODE_INPUT +
+			     PGA_GAIN_12); // PGA gain = 1
 #endif
 
 #ifndef IMU_NOT_PRESENT
@@ -1182,7 +1182,7 @@ int main(void)
     icmSleepMode(IMU_DEVICE_1, false);
     icmSetLowPowerMode(IMU_DEVICE_1, false);
     icmInitiateIcm20948(IMU_DEVICE_1);
-//    icmInitiateAk09916(IMU_DEVICE_1);
+    icmInitiateAk09916(IMU_DEVICE_1);
 //    icmReadTempData(IMU_DEVICE_1);
 #endif
     for (;;)

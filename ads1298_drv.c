@@ -31,7 +31,7 @@
  * @brief Register Map
  */
 #define ADS_ID     0x0
-#define ADS1298_ID      0x92 // 0b10010010 See Table 17. ID Control Register Field Descriptions
+#define ADS1298_ID      0x90 // 0b10010000 See Table 17. ID Control Register Field Descriptions
 
 #define CONFIG1    0x1
 #define HIGH_RESOLUTION 0x80
@@ -80,7 +80,7 @@
                                     // 011 = 3
                                     // 100 = 4
                                     // 101 = 8
-                                    // 110 = 12
+#define PGA_GAIN_12            0xc0 // 110 = 12
 #define RESERVED_0x08          0x08 // Bit 3
 
 #define RLD_SENSP 0xD // (2) 00 RLD8P(1) RLD7P(1) RLD6P(1) RLD5P(1) RLD4P RLD3P RLD2P RLD1P
@@ -222,8 +222,10 @@ void ads_init_gpio_pins(void)
     nrf_gpio_cfg_input(SPI_DRDY_PIN, NRF_GPIO_PIN_PULLUP); // Configure Data Ready pin.
     nrf_gpio_cfg_output(ADS_N_RESET_PIN);                  // Configure ADS Reset Pin.
     nrf_gpio_cfg_output(ADS_N_PWDN_PIN);                   // Configure ADS Power Down Pin.
+    nrf_gpio_cfg_output(SPI_START_PIN);
     nrf_gpio_pin_clear(ADS_N_RESET_PIN);                   // Set low, hold in reset
     nrf_gpio_pin_clear(ADS_N_PWDN_PIN);                    // Set low, hold in power down
+    nrf_gpio_pin_set(SPI_START_PIN);                    // Set low, hold in power down
 }
 
 /**
@@ -336,8 +338,8 @@ void ads_power_up_sequence(void)
     ads_set_SDATAC();
 
     /**
-     * @brief Read the device ID.
-     * @description Done to verify that we are trying to configure the correct device.
+     * Read the device ID.
+     * Done to verify that we are trying to configure the correct device.
      * We expect 0b100 10 010 = 0x92 in return.
      */
     ads_read_ID(ADS1298_ID);
@@ -354,14 +356,12 @@ uint8_t ads_read_ID(uint8_t expected_ID)
     uint8_t idlen = 1;
     while (idcode != expected_ID)
     {
-	NRF_LOG_DEBUG("%s(%d) 0x%x 0x%x 0x%x",
-		      __FILENAME__, __LINE__,
-		      tx_buf[0], tx_buf[1], tx_buf[2]);
 	MY_ERROR_CHECK(ads_send_command(tx_buf, 2, &idcode, idlen));
 	NRF_LOG_DEBUG("%s(%d) ID code = 0x%x, ID len = 0x%x.",
 		      __FILENAME__, __LINE__,
 		      idcode, idlen);
     }
+    MY_ERROR_CHECK(idcode!=expected_ID);
     return idcode;
 }
 
@@ -370,7 +370,7 @@ ret_code_t ads_set_channel_x(uint8_t chan_set)
     ret_code_t err_code = GENERAL_FAILURE;
     uint8_t tx_buf[3] = { 0, 0, 0 };
 
-    for (int i = CH1SET; i <= CH8SET; i++)
+    for (int i = CH1SET; i <= CH4SET; i++)
     {
 	// Set All Channels to Input Short WREG CHnSET chan_set
 	tx_buf[0] = (ADS_WREG | ((i) & 0x1f));
