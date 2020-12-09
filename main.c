@@ -1139,9 +1139,6 @@ static void idle_state_handle(void)
     }
 }
 
-
-/**@brief Function for application main entry.
- */
 int main(void)
 {
     ret_code_t err_code;
@@ -1182,8 +1179,10 @@ int main(void)
     icmInitI2c();
     icmDeviceReset(IMU_DEVICE_1);
     icmReadChipId(IMU_DEVICE_1);
+    icmSleepMode(IMU_DEVICE_1, false);
+    icmSetLowPowerMode(IMU_DEVICE_1, false);
     icmInitiateIcm20948(IMU_DEVICE_1);
-    icmInitiateAk09916(IMU_DEVICE_1);
+//    icmInitiateAk09916(IMU_DEVICE_1);
 //    icmReadTempData(IMU_DEVICE_1);
 #endif
     for (;;)

@@ -36,23 +36,40 @@
 #define ICM_PWR_MGMT_1_LP_EN          0x20
 #define ICM_PWR_MGMT_1_RESERVD_0x08   0x10
 #define ICM_PWR_MGMT_1_TEMP_DIS       0x08
-#define ICM_PWR_MGMT_1_CLKSEL_0x4     0x04
-#define ICM_PWR_MGMT_1_CLKSEL_0x2     0x02
-#define ICM_PWR_MGMT_1_CLKSEL_0x1     0x01
+#define ICM_PWR_MGMT_1_CLKSEL_0x4     0x04  // Values 1 trough 5 selects the best clock source automatically,
+#define ICM_PWR_MGMT_1_CLKSEL_0x2     0x02  // PLL if ready, otherwise the internal osc.
+#define ICM_PWR_MGMT_1_CLKSEL_0x1     0x01  // Auto select when value = 0b001, 0b010, 0b011, 0b100 or 0b101
 
 #define ICM_PWR_MGMT_2   0x07  // R/W - DISABLE_ACCL DISABLE_GYRO DISABLE_BOTH
 #define ICM_PWR_MGMT_2_RESERVD_0xC0   0x80  // Reserved bits               0b1000 000
 #define ICM_PWR_MGMT_2_DISABLE_PWR    0x40  // Disable power pressure      0b0100 000
 #define ICM_PWR_MGMT_2_DISABLE_ACCL   0x38  // Dis accel, en gyro          0b00111000
-#define ICM_PWR_MGMT_2_DISABLE_GYRO   0x07  // En accel, dis gyro            0x00000111
-#define ICM_PWR_MGMT_2_DISABLE_ALL    0x1f  // Disable pwr, accel and gyro   0x01111111
+#define ICM_PWR_MGMT_2_DISABLE_GYRO   0x07  // En accel, dis gyro          0x00000111
+#define ICM_PWR_MGMT_2_DISABLE_ALL    0x1f  // Disable pwr, accel and gyro 0x01111111
  
-#define ICM_INT_PIN_CFG               0x0F  // R/W INT1_ACTL INT1_OPEN INT1_LATCH_INT_ENINT_ANYRD_2CLEAR ACTL_FSYNC FSYNC_INT_MODE_EN BYPASS_EN -
+#define ICM_INT_PIN_CFG 0x0F  // R/W INT1_ACTL INT1_OPEN INT1_LATCH_INT_ENINT_ANYRD_2CLEAR ACTL_FSYNC FSYNC_INT_MODE_EN BYPASS_EN -
+#define ICM_INT_PIN_CFG_INT1_ACTL         0x80
+#define ICM_INT_PIN_CFG_INT1_OPEN         0x40
+#define ICM_INT_PIN_CFG_INT1_LATCH_INT_EN 0x20
+#define ICM_INT_PIN_CFG_INT_ANYRD_2CLEAR  0x10
+#define ICM_INT_PIN_CFG_ACTL_FSYNC        0x08
+#define ICM_INT_PIN_CFG_FSYNC_INT_MODE_EN 0x04
+#define ICM_INT_PIN_CFG_BYPASS_EN         0x02
+#define ICM_INT_PIN_CFG_RESERVED0         0x01
+
 #define ICM_INT_ENABLE                0x10  // R/W REG_WOF_EN - WOM_INT_EN PLL_RDY_EN DMP_INT1_EN I2C_MST_INT_EN
 #define ICM_INT_ENABLE_1              0x11  // R/W - RAW_DATA_0_RDY_EN
 #define ICM_INT_ENABLE_2              0x12  // R/W - FIFO_OVERFLOW_EN[4:0]
 #define ICM_INT_ENABLE_3              0x13  // R/W - FIFO_WM_EN[4:0]
-#define ICM_I2C_MST_STATUS            0x17  // R/C PASS_THROUGH I2C_SLV4_DONE I2C_LOST_ARB I2C_SLV4_NACK I2C_SLV3_NACK I2C_SLV2_NACK I2C_SLV1_NACK I2C_SLV0_NACK
+#define ICM_I2C_MST_STATUS            0x17  // R/C
+#define ICM_I2C_MST_STATUS_PASS_THROUGH  0x80
+#define ICM_I2C_MST_STATUS_I2C_SLV4_DONE 0x40
+#define ICM_I2C_MST_STATUS_I2C_LOST_ARB  0x20
+#define ICM_I2C_MST_STATUS_I2C_SLV4_NACK 0x10
+#define ICM_I2C_MST_STATUS_I2C_SLV3_NACK 0x08
+#define ICM_I2C_MST_STATUS_I2C_SLV2_NACK 0x04
+#define ICM_I2C_MST_STATUS_I2C_SLV1_NACK 0x02
+#define ICM_I2C_MST_STATUS_I2C_SLV0_NACK 0x01
 #define ICM_INT_STATUS                0x19  // R/C - WOM_INT PLL_RDY_INT DMP_INT1 I2C_MST_INT
 #define ICM_INT_STATUS_1              0x1A  // R/C - RAW_DATA_0_RDY_INT
 #define ICM_INT_STATUS_2              0x1B  // R/C - FIFO_OVERFLOW_INT[4:0]
@@ -155,13 +172,13 @@
 #define ICM_GYRO_CONFIG_1   0x01  // R/W
 #define ICM_GYRO_CONFIG_1_RESERVED_7   0x80
 #define ICM_GYRO_CONFIG_1_RESERVED_6   0x40
-#define ICM_GYRO_GYRO_DLPFCFG_5        0x20
-#define ICM_GYRO_GYRO_DLPFCFG_4        0x10
-#define ICM_GYRO_GYRO_DLPFCFG_3        0x08
-#define ICM_GYRO_GYRO_FS_SEL_2         0x4
-#define ICM_GYRO_GYRO_FS_SEL_1         0x2
-#define ICM_GYRO_GYRO_FCHOICE          0x1
-#define ICM_GYRO_CONFIG_2             0x02  // R/W - XGYRO_CTEN YGYRO_CTEN ZGYRO_CTEN GYRO_AVGCFG[2:0]
+#define ICM_GYRO_CONFIG_1_DLPFCFG_5        0x20
+#define ICM_GYRO_CONFIG_1_DLPFCFG_4        0x10
+#define ICM_GYRO_CONFIG_1_DLPFCFG_3        0x08
+#define ICM_GYRO_CONFIG_1_FS_SEL_2         0x4
+#define ICM_GYRO_CONFIG_1_FS_SEL_1         0x2
+#define ICM_GYRO_CONFIG_1_FCHOICE          0x1
+#define ICM_GYRO_CONFIG_2 0x02  // R/W - XGYRO_CTEN YGYRO_CTEN ZGYRO_CTEN GYRO_AVGCFG[2:0]
 #define ICM_XG_OFFS_USRH              0x03  // R/W X_OFFS_USER[15:8]
 #define ICM_XG_OFFS_USRL              0x04  // R/W X_OFFS_USER[7:0]
 #define ICM_YG_OFFS_USRH              0x05  // R/W Y_OFFS_USER[15:8]
@@ -174,17 +191,17 @@
 #define ICM_ACCEL_INTEL_CTRL          0x12  // R/W - ACCEL_INTEL_EN ACCEL_INTEL_MODE_INT
 #define ICM_ACCEL_WOM_THR             0x13  // R/W WOM_THRESHOLD[7:0]
 
-#define ICM_ACCEL_CONFIG              0x14  // R/W - ACCEL_DLPFCFG[2:0] ACCEL_FS_SEL[1:0] ACCEL_FCHOICE
-#define ICM_ACCEL_CONFIG_RESERVED_7        0x80
-#define ICM_ACCEL_CONFIG_RESERVED_6        0x40
-#define ICM_ACCEL_CONFIG_ACCEL_DLPFCFG_2   0x20
-#define ICM_ACCEL_CONFIG_ACCEL_DLPFCFG_1   0x10
-#define ICM_ACCEL_CONFIG_ACCEL_DLPFCFG_0   0x08
-#define ICM_ACCEL_CONFIG_ACCEL_FS_SEL_1    0x04  // 00 = ±250 dps
-#define ICM_ACCEL_CONFIG_ACCEL_FS_SEL_0    0x02  // 01= ±500 dps
+#define ICM_ACCEL_CONFIG_1            0x14  // R/W - ACCEL_DLPFCFG[2:0] ACCEL_FS_SEL[1:0] ACCEL_FCHOICE
+#define ICM_ACCEL_CONFIG_1_RESERVED_7        0x80
+#define ICM_ACCEL_CONFIG_1_RESERVED_6        0x40
+#define ICM_ACCEL_CONFIG_1_DLPFCFG_2   0x20
+#define ICM_ACCEL_CONFIG_1_DLPFCFG_1   0x10
+#define ICM_ACCEL_CONFIG_1_DLPFCFG_0   0x08
+#define ICM_ACCEL_CONFIG_1_FS_SEL_1    0x04  // 00 = ±250 dps
+#define ICM_ACCEL_CONFIG_1_FS_SEL_0    0x02  // 01= ±500 dps
                                             // 10 = ±1000 dps
                                             // 11 = ±2000 dps
-#define ICM_ACCEL_CONFIG_ACCEL_FCHOICE     0x01;
+#define ICM_ACCEL_CONFIG_1_FCHOICE     0x01
 
 #define ICM_ACCEL_CONFIG_2            0x15  // R/W - AX_ST_EN_R EGAY_ST_EN_REG AZ_ST_EN_REG DEC3_CFG[1:0]
 #define ICM_FSYNC_CONFIG              0x52  // R/W DELAY_TIME_EN - WOF_DEGLITCH_EN WOF_EDGE_INT EXT_SYNC_SET[3:0]
@@ -196,9 +213,28 @@
  */
 #define ICM_USER_BANK_3               0x30
 #define ICM_I2C_MST_ODR_CONFIG        0x00  // R/W - I2C_MST_ODR_CONFIG[3:0]
-#define ICM_I2C_MST_CTRL              0x01  // R/W MULT_MST_EN - I2C_MST_P_NSR I2C_MST_CLK[3:0]
+
+#define ICM_I2C_MST_CTRL 0x01  // R/W MULT_MST_EN - I2C_MST_P_NSR I2C_MST_CLK[3:0]
+#define ICM_I2C_MST_CTRL_MULT_MST_EN   0x80
+#define ICM_I2C_MST_CTRL_RESERVED6     0x40
+#define ICM_I2C_MST_CTRL_RESERVED5     0x20
+#define ICM_I2C_MST_CTRL_I2C_MST_P_NSR 0x10
+#define ICM_I2C_MST_CTRL_I2C_MST_CLK3  0x08
+#define ICM_I2C_MST_CTRL_I2C_MST_CLK2  0x04
+#define ICM_I2C_MST_CTRL_I2C_MST_CLK1  0x02
+#define ICM_I2C_MST_CTRL_I2C_MST_CLK0  0x01
+
+
 #define ICM_I2C_MST_DELAY_CTRL        0x02  // R/W DELAY_ES_SHADOW - I2C_SLV4_DELAY_EN I2C_SLV3_DELAY_EN I2C_SLV2_DELAY_ENI2C_SLV1_DELAY_EN I2C_SLV0_DELAY_EN
-#define ICM_I2C_SLV0_ADDR             0x03  // R/W I2C_SLV0_RNW I2C_ID_0[6:0]
+#define ICM_I2C_SLV0_ADDR 0x03  // R/W I2C_SLV0_RNW I2C_ID_0[6:0]
+#define ICM_I2C_SLV0_ADDR_RNW   0x80
+#define ICM_I2C_SLV0_ADDR_ID_06 0x40
+#define ICM_I2C_SLV0_ADDR_ID_05 0x20
+#define ICM_I2C_SLV0_ADDR_ID_04 0x10
+#define ICM_I2C_SLV0_ADDR_ID_03 0x08
+#define ICM_I2C_SLV0_ADDR_ID_02 0x04
+#define ICM_I2C_SLV0_ADDR_ID_01 0x02
+#define ICM_I2C_SLV0_ADDR_ID_00 0x01
 #define ICM_I2C_SLV0_ADDR_READ_FLAG   0x80
 #define ICM_I2C_SLV0_REG              0x04  // R/W I2C_SLV0_REG[7:0]
 #define ICM_I2C_SLV0_CTRL             0x05  // R/W I2C_SLV0_EN I2C_SLV0_BYTE_SW I2C_SLV0_REG_DIS I2C_SLV0_GRP I2C_SLV0_LENG[3:0]
@@ -217,8 +253,24 @@
 #define ICM_I2C_SLV3_CTRL             0x11  // R/W I2C_SLV3_EN I2C_SLV3_BYTE_SW I2C_SLV3_REG_DIS I2C_SLV3_GRP I2C_SLV3_LENG[3:0]
 #define ICM_I2C_SLV3_DO               0x12  // R/W I2C_SLV3_DO[7:0]
 #define ICM_I2C_SLV4_ADDR             0x13  // R/W I2C_SLV4_RNW I2C_ID_4[6:0]
+#define ICM_I2C_SLV4_ADDR_RNW   0x80
+#define ICM_I2C_SLV4_ADDR_ID_06 0x40
+#define ICM_I2C_SLV4_ADDR_ID_05 0x20
+#define ICM_I2C_SLV4_ADDR_ID_04 0x10
+#define ICM_I2C_SLV4_ADDR_ID_03 0x08
+#define ICM_I2C_SLV4_ADDR_ID_02 0x04
+#define ICM_I2C_SLV4_ADDR_ID_01 0x02
+#define ICM_I2C_SLV4_ADDR_ID_00 0x01
 #define ICM_I2C_SLV4_REG              0x14  // R/W I2C_SLV4_REG[7:0]
-#define ICM_I2C_SLV4_CTRL             0x15  // R/W I2C_SLV4_EN I2C_SLV4_BYTE_SW I2C_SLV4_REG_DIS I2C_SLV4_DLY[4:0]
+#define ICM_I2C_SLV4_CTRL 0x15  // R/W I2C_SLV4_EN I2C_SLV4_BYTE_SW I2C_SLV4_REG_DIS I2C_SLV4_DLY[4:0]
+#define ICM_I2C_SLV4_CTRL_EN      0x80
+#define ICM_I2C_SLV4_CTRL_INT_EN  0x40
+#define ICM_I2C_SLV4_CTRL_REG_DIS 0x20
+#define ICM_I2C_SLV4_CTRL_DLY_4   0x10
+#define ICM_I2C_SLV4_CTRL_DLY_3   0x08
+#define ICM_I2C_SLV4_CTRL_DLY_2   0x04
+#define ICM_I2C_SLV4_CTRL_DLY_1   0x02
+#define ICM_I2C_SLV4_CTRL_DLY_0   0x01
 #define ICM_I2C_SLV4_DO               0x16  // R/W I2C_SLV4_DO[7:0]
 #define ICM_I2C_SLV4_DI               0x17  // R I2C_SLV4_DI[7:0]
 
@@ -361,7 +413,7 @@ extern void readMagnReg (uint8_t imu_addr, uint8_t reg, uint8_t length);
  * @param -
  * @return -
  */
-extern void writeMagnReg(uint8_t imu_addr, char reg, char data);
+void writeMagnReg(uint8_t imu_number, char reg, uint8_t data);
 
 /**
  * @brief Reset of the device
@@ -387,12 +439,28 @@ void icmReadTempData(uint8_t imu_addr);
  */
 extern void readAccelData(uint8_t imu_addr);
 
+/**
+ * @brief Set IMU in sleep mode
+ *
+ * @param 
+ * @return -
+ */
+void icmSleepMode(uint8_t imu_number, bool mode);
+
+/**
+ * @brief Set IMU in low power mode
+ *
+ * @param 
+ * @return -
+ */
+void icmSetLowPowerMode(uint8_t imu_number, bool mode);
+
 void ConfMagnData1(uint8_t imu_number);
 extern void ConfMagnData1(uint8_t imu_number);
 extern void ConfMagnData2(uint8_t imu_number);
 void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
 void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
-
+void readMagnetometerRegister(uint8_t imu_number,  uint8_t reg,  uint8_t *d);
 
 /**
  * @brief Read gyroscope raw data from device
