@@ -72,6 +72,8 @@ static const nrf_drv_twi_t m_twi = NRF_DRV_TWI_INSTANCE(1);
 
 static uint8_t CurrentChannel;
 
+uint8_t icmConfigureDevice(uint8_t imu_number, uint8_t addr, char reg, uint8_t data, bool readWrite, bool send_reg_addr);
+
 /**
  * 0x69 is the ICM20948's address default I2C address.
  * 68 is also possible if need
@@ -311,10 +313,14 @@ void icmInitiateAk09916(uint8_t imu_number)
 
     uint8_t MAG_AK09916_WHO_AM_I[2] = { 0x48, 0x09 };
     uint8_t mag_id[2] = { 0, 0 };
-    for (uint8_t i = 0; i < 5; i++)
+    uint8_t i = 0;
+    for (i = 0; i < 5; i++)
     {
+//	mag_id[ICM_AK_WIA1] = icmConfigureDevice(imu_number, IMU_MAG_ADDR, ICM_AK_WIA1, 0, true, true);
+//	mag_id[ICM_AK_WIA2] = icmConfigureDevice(imu_number, IMU_MAG_ADDR, ICM_AK_WIA2, 0, true, true);
+
 	readMagnetometerRegister(imu_number, ICM_AK_WIA1, &mag_id[ICM_AK_WIA1]);
-	readMagnetometerRegister(imu_number, ICM_AK_WIA1, &mag_id[ICM_AK_WIA2]);
+	readMagnetometerRegister(imu_number, ICM_AK_WIA2, &mag_id[ICM_AK_WIA2]);
 	if ((mag_id[ICM_AK_WIA1] == MAG_AK09916_WHO_AM_I[0]) &&
 	    (mag_id[ICM_AK_WIA2] == MAG_AK09916_WHO_AM_I[1]))
 	{
@@ -324,6 +330,11 @@ void icmInitiateAk09916(uint8_t imu_number)
 	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
 	setBits(imu_number, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_RST);
     }
+    /* if (i = 5) */
+    /* { */
+    /* 	NRF_LOG_DEBUG("%s(%d) Found chip for the magneotmeter: 0x%x, 0x%x", __FILENAME__, __LINE__, mag_id[ICM_AK_WIA1], mag_id[ICM_AK_WIA2]); */
+    /* 	MY_ERROR_CHECK(GENERAL_FAILURE); */
+    /* } */
 
     writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
     writeReg (imu_number, ICM_I2C_MST_CTRL, 0x1D);
@@ -474,9 +485,9 @@ void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, ui
      * Get data from the sensor and
      * turn the MSB and LSB into a signed 16-bit value
      */
-    imu_data->data_x.u = ((int16_t)rawData[0], rawData[1]);
-    imu_data->data_y.u = ((int16_t)rawData[2], rawData[3]);
-    imu_data->data_z.u = ((int16_t)rawData[4], rawData[5]);
+    imu_data->data_x.u = ((int16_t)convert(rawData[0], rawData[1]));
+    imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3]));
+    imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5]));
 
     NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d",
     		  imu_data->device_id,
@@ -499,10 +510,6 @@ void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
 
     if (!(c & 0x08))
     {
-	/* NRF_LOG_DEBUG("Magnetometer raw data 0x%x, 0x%x, 0x%x, 0x%x, 0x%x", */
-	/* 	      rawData[0], rawData[1], rawData[2], */
-	/* 	      rawData[3], rawData[4], rawData[5]); */
-
 	/*
 	 * Set device id and packet length.
 	 */
@@ -514,12 +521,9 @@ void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
 	 * N.B. Little Endian!
 	 * Also skip data 0 (status 1) and 7 (status 2).
 	 */
-	imu_data->data_x.u = ((int16_t)rawData[2], rawData[1]);
-	imu_data->data_y.u = ((int16_t)rawData[4], rawData[3]);
-	imu_data->data_z.u = ((int16_t)rawData[6], rawData[5]);
-	/* imu_data->data_x.f = ((int16_t)convert(rawData[1], rawData[0])) * 0x1p-8f; */
-	/* imu_data->data_y.f = ((int16_t)convert(rawData[3], rawData[2])) * 0x1p-8f; */
-	/* imu_data->data_z.f = ((int16_t)convert(rawData[5], rawData[4])) * 0x1p-8f; */
+	imu_data->data_x.u = ((int16_t)convert(rawData[2], rawData[1]));
+	imu_data->data_y.u = ((int16_t)convert(rawData[4], rawData[3]));
+	imu_data->data_z.u = ((int16_t)convert(rawData[6], rawData[5]));
 	NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d",
 		      imu_data->device_id,
 		      imu_data->packet_length,
@@ -527,7 +531,7 @@ void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
     }
     else
     {
-	NRF_LOG_DEBUG("Meagnetometer: something else is wrong with the data!!!");
+	NRF_LOG_DEBUG("Magnetometer: something else is wrong with the data!!!");
     }
 }
 
@@ -543,6 +547,7 @@ void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
  */
 void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
+#ifndef IMU_NOT_PRESENT
     ret_code_t err_code = GENERAL_FAILURE;
     if (sensor_type == IMU_MAGNETOMETER)
     {
@@ -557,6 +562,8 @@ void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
     {
 	getSensorData(p_sensor_service, reg, sensor_type, imu_number, imu_data);
     }
+#else
+#endif
     err_code = icm_stream_update(p_sensor_service,
 			         imu_data);
 }
@@ -577,4 +584,89 @@ void writeMagnReg(uint8_t imu_number, char reg, uint8_t data)
     writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
 }
 
+uint8_t icmConfigureDevice(uint8_t imu_number, uint8_t addr, char reg, uint8_t data, bool readWrite, bool send_reg_addr)
+{
+    if (readWrite = true)
+    {
+	addr |= 0x80;
+    }
+
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_ADDR,  addr);
+    writeReg(imu_number, ICM_I2C_SLV4_REG,  reg);
+
+    uint8_t ctrl_register_slv4 = 0x00;
+    ctrl_register_slv4 |= (1<<7); // EN bit [7] (set)
+    ctrl_register_slv4 &= ~(1<<6); // INT_EN bit [6] (cleared)
+    ctrl_register_slv4 &= ~(0x0F); // DLY bits [4:0] (cleared = 0)
+
+    if(send_reg_addr)
+    {
+	ctrl_register_slv4 &= ~(1<<5); // REG_DIS bit [5] (cleared)
+    }
+    else
+    {
+	ctrl_register_slv4 |= (1<<5); // REG_DIS bit [5] (set)
+    }
+
+    bool txn_failed = false;
+
+    if (readWrite == false)
+    {
+	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+	writeReg(imu_number, ICM_I2C_SLV4_DO,  data);
+
+	// Kick off txn
+	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+	writeReg(imu_number, ICM_I2C_SLV4_CTRL, ctrl_register_slv4);
+
+	uint16_t max_cycles = 1000;
+	uint16_t count = 0;
+	uint8_t i2c_mst_status;
+	bool slave4Done = false;
+	while (slave4Done == false)
+	{
+	    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
+
+	    readRegs(imu_number, ICM_I2C_MST_STATUS, &i2c_mst_status, 8);
+	    if (i2c_mst_status & (1<<6)) // Check I2C_SLAVE_DONE bit [6]
+	    {
+		slave4Done = true;
+	    }
+
+	    if (count > max_cycles)
+	    {
+		slave4Done = true;
+	    }
+
+	    count += 1;
+	}
+
+	if (i2c_mst_status & (1<<4)) // Check I2C_SLV4_NACK bit [4]
+	{
+	    txn_failed = true;
+	}
+
+	if (count > max_cycles)
+	{
+	    txn_failed = true;
+	}
+
+	if (txn_failed)
+	{
+	    return false;
+	}
+
+	if (readWrite = true)
+	{
+	    uint8_t data;
+	    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+	    readRegs(imu_number, ICM_I2C_SLV4_DI, &data, 1);
+
+	    return data;
+	}
+
+	return true; // if we get here, then it was a successful write
+    }
+}
 /** @} */

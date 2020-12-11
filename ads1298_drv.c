@@ -73,15 +73,6 @@
 #define CH6SET 0xA // (1) 00 PD6 GAIN62 GAIN61 GAIN60 0 MUX62 MUX61 MUX60
 #define CH7SET 0xB // (1) 00 PD7 GAIN72 GAIN71 GAIN70 0 MUX72 MUX71 MUX70
 #define CH8SET 0xC // (1) 00 PD8 GAIN82 GAIN81 GAIN80 0 MUX82 MUX81 MUX80
-#define POWER_DOWN             0x80 // 0=Normal operation, 1=Power down
-#define PGA_GAIN_2             0x40 // 000 = 6
-#define PGA_GAIN_1             0x20 // 001 = 1
-#define PGA_GAIN_0             0x10 // 010 = 2
-                                    // 011 = 3
-                                    // 100 = 4
-                                    // 101 = 8
-#define PGA_GAIN_12            0xc0 // 110 = 12
-#define RESERVED_0x08          0x08 // Bit 3
 
 #define RLD_SENSP 0xD // (2) 00 RLD8P(1) RLD7P(1) RLD6P(1) RLD5P(1) RLD4P RLD3P RLD2P RLD1P
 #define RLD_SENSN 0xE // (2) 00 RLD8N(1) RLD7N(1) RLD6N(1) RLD5N(1) RLD4N RLD3N RLD2N RLD1N
@@ -118,12 +109,12 @@ uint8_t ADS_RDATA   = (0x12); // Read data by command. supports multiple read ba
 /**
  * REGISTER READ COMMANDS
  *
- * When in RDATAC mode, the RREG command is ignored.
+ * When in RDATAC mode, the RREG command is ignored. Todo: Isn't this true for both commands RREG and WREG?
  */
 #define ADS_RREG    (0x20)  // Read n nnnn registers starting at address r rrrr.
-                           // 001r rrrr 000n nnnn (2)
+                            // 001r rrrr 000n nnnn (2)
 #define ADS_WREG    (0x40)  // Write n nnnn registers starting at address r rrrr.
-                           // 010r rrrr 000n nnnn (2)
+                            // 010r rrrr 000n nnnn (2)
 
 #define PIN_LOW     (0x0)
 #define PIN_HIGH    (0x1)
@@ -182,6 +173,14 @@ void ads_get_channel_data(ads_emg_data_t *emg_data)
     emg_data->chan2 = chan2;
     emg_data->chan3 = chan3;
     emg_data->chan4 = chan4;
+}
+
+void ads_get_simulated_data(ads_emg_data_t *emg_data)
+{
+    emg_data->chan1 = 0x7fff;
+    emg_data->chan2 = 0x8000;
+    emg_data->chan3 = 0x7fff;
+    emg_data->chan4 = 0x8000;
 }
 
 /**
@@ -426,7 +425,7 @@ void ads_configure_measurment(uint8_t configuration)
     write_register (CONFIG3, 0xDC);
     ads_set_channel_x( configuration );
     write_register (LOFF_SENSP, 0xff);
-    write_register (LOFF_SENSN, 0x02);
+    write_register (LOFF_SENSN, 0xff);
     write_register (LOFF_STATP, 0xff);
     write_register (LOFF_STATN, 0xff);
     write_register (RESP, 0xf0);
@@ -514,16 +513,16 @@ void ads_read_adc_data(void)
     chan2  = ads_convert(rx_buf[6], rx_buf[7], rx_buf[8]);
     chan3  = ads_convert(rx_buf[9], rx_buf[10], rx_buf[11]);
     chan4  = ads_convert(rx_buf[12], rx_buf[13], rx_buf[14]);
-    /* NRF_LOG_DEBUG("Status: 0x%x, 0x%x, 0x%x", */
-    /* 		  rx_buf[0], rx_buf[1], rx_buf[2]); */
-    /* NRF_LOG_DEBUG("Channel 1: 0x%x, 0x%x, 0x%x, %d", */
-    /* 		  rx_buf[3], rx_buf[4], rx_buf[5], chan1); */
-    /* NRF_LOG_DEBUG("Channel 2: 0x%x, 0x%x, 0x%x, %d", */
-    /* 		  rx_buf[6], rx_buf[7], rx_buf[8], chan2); */
-    /* NRF_LOG_DEBUG("Channel 3: 0x%x, 0x%x, 0x%x, %d", */
-    /* 		  rx_buf[9], rx_buf[10], rx_buf[11], chan3); */
-    /* NRF_LOG_DEBUG("Channel 4: 0x%x, 0x%x, 0x%x, %d", */
-    /* 		  rx_buf[12], rx_buf[13], rx_buf[14], chan4); */
+    NRF_LOG_DEBUG("Status: 0x%x, 0x%x, 0x%x",
+    		  rx_buf[0], rx_buf[1], rx_buf[2]);
+    NRF_LOG_DEBUG("Channel 1: 0x%x, 0x%x, 0x%x, %d",
+    		  rx_buf[3], rx_buf[4], rx_buf[5], chan1);
+    NRF_LOG_DEBUG("Channel 2: 0x%x, 0x%x, 0x%x, %d",
+    		  rx_buf[6], rx_buf[7], rx_buf[8], chan2);
+    NRF_LOG_DEBUG("Channel 3: 0x%x, 0x%x, 0x%x, %d",
+    		  rx_buf[9], rx_buf[10], rx_buf[11], chan3);
+    NRF_LOG_DEBUG("Channel 4: 0x%x, 0x%x, 0x%x, %d",
+    		  rx_buf[12], rx_buf[13], rx_buf[14], chan4);
 
 #ifdef EMG_DEBUG
     printf("Channel 1, 2, 3 and 4: %d, %d, %d, %d\n", chan1, chan2, chan3, chan4);

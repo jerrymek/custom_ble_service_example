@@ -209,7 +209,6 @@ static void timer_timeout_sensor_handler(void * p_context)
     icm_imu_data_t imu_data;
     if((buf_index % 2) == 0)
     {
-#ifndef IMU_NOT_PRESENT
     	if (imu_index == IMU_ACCELEROMETER)
     	{
 	    readSensorData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
@@ -246,13 +245,15 @@ static void timer_timeout_sensor_handler(void * p_context)
 	}
 
 	nrf_gpio_pin_toggle(LED_3);
-#endif
     }
     else
     {
-#ifndef EMG_NOT_PRESENT
 	nrf_gpio_pin_toggle(LED_4);
+#ifndef EMG_NOT_PRESENT
 	ads_get_channel_data(&main_emg_data);
+#else
+	ads_get_simulated_data(&main_emg_data);
+#endif
 
         uint8_t ads_buf[4] = { 0, 0, 0, 0 };
 
@@ -280,7 +281,7 @@ static void timer_timeout_sensor_handler(void * p_context)
 	}
 	else
 	{
-	    // error
+	    MY_ERROR_CHECK(GENERAL_FAILURE);
 	}
 
 	do
@@ -308,7 +309,6 @@ static void timer_timeout_sensor_handler(void * p_context)
 	    MY_ERROR_LOG(err_code);
 	    NRF_LOG_DEBUG("BLE_ERROR_GATTS_SYS_ATTR_MISSING, enable notifications on your device!");
 	}
-#endif
     }
     buf_index++;
 }
@@ -1172,7 +1172,8 @@ int main(void)
     ads_init_spi();
     ads_power_up_sequence();
     ads_configure_measurment(INPUT_SHORTED + //NORMAL_ELECTRODE_INPUT +
-			     PGA_GAIN_12); // PGA gain = 1
+			     PGA_GAIN_2 +    // PGA gain = 12
+			     PGA_GAIN_1); 
 #endif
 
 #ifndef IMU_NOT_PRESENT
