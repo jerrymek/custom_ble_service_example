@@ -165,8 +165,7 @@ ble_ss_t m_sensor_service;
 // app_timer id variable and define our timer interval and define a timer interval
 //APP_TIMER_DEF(m_our_char_timer_id);
 APP_TIMER_DEF(m_sensor_char_timer_id);
-//#define OUR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) // Todo: check this setting! 1000 ms intervals
-#define SENSOR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(200) // Todo: check this setting! 1000 ms intervals
+#define SENSOR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1)   // milli second timer intervall.
 
 ads_emg_data_t main_emg_data;
 icm_imu_data_t main_imu_data;
