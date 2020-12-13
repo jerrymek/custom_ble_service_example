@@ -253,7 +253,7 @@
 #define ICM_I2C_SLV3_CTRL             0x11  // R/W I2C_SLV3_EN I2C_SLV3_BYTE_SW I2C_SLV3_REG_DIS I2C_SLV3_GRP I2C_SLV3_LENG[3:0]
 #define ICM_I2C_SLV3_DO               0x12  // R/W I2C_SLV3_DO[7:0]
 #define ICM_I2C_SLV4_ADDR             0x13  // R/W I2C_SLV4_RNW I2C_ID_4[6:0]
-#define ICM_I2C_SLV4_ADDR_RNW   0x80
+#define ICM_I2C_SLV4_ADDR_RNW   0x80 // the 7th bit is set then the transaction is a read, otherwise if it is not set it is a write
 #define ICM_I2C_SLV4_ADDR_ID_06 0x40
 #define ICM_I2C_SLV4_ADDR_ID_05 0x20
 #define ICM_I2C_SLV4_ADDR_ID_04 0x10
@@ -455,11 +455,38 @@ void icmSleepMode(uint8_t imu_number, bool mode);
  */
 void icmSetLowPowerMode(uint8_t imu_number, bool mode);
 
-void ConfMagnData1(uint8_t imu_number);
-void ConfMagnData1(uint8_t imu_number);
-void ConfMagnData2(uint8_t imu_number);
-void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
-void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
+/**
+ * @brief Get sensor data from the Accelerometer and Gyroscope.
+ *
+ * @param TBD
+ * @return -
+ */
+void icm_getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
+
+/**
+ * @brief Get simulated sensor data from the Accelerometer and Gyroscope.
+ *
+ * @param TBD
+ * @return -
+ */
+void icm_getSimulatedData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
+
+/**
+ * @brief Get sensor data from the Magnetometer.
+ *
+ * @param TBD
+ * @return -
+ */
+void icm_readMagnetometerData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
+
+/**
+ * @brief Get simulated sensor data from the Magnetometer.
+ *
+ * @param TBD
+ * @return -
+ */
+void icm_readSimulatedData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data);
+
 void readMagnetometerRegister(uint8_t imu_number,  uint8_t reg,  uint8_t *d);
 
 /**

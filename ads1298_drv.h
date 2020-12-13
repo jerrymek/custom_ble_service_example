@@ -46,6 +46,7 @@ void ads_configure_shorted_input_measurment(void);
 void ads_read_adc_data(void);
 void ads_init_spi(void);
 void ads_get_channel_data(ads_emg_data_t *emg_data);
+void ads_get_simulated_data(ads_emg_data_t *emg_data);
 uint8_t ads_read_ID(uint8_t expected_ID);
 ret_code_t ads_hello_world (void);
 ret_code_t ads_wakeup (void);

@@ -165,7 +165,7 @@ ble_ss_t m_sensor_service;
 // app_timer id variable and define our timer interval and define a timer interval
 //APP_TIMER_DEF(m_our_char_timer_id);
 APP_TIMER_DEF(m_sensor_char_timer_id);
-#define SENSOR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1)   // milli second timer intervall.
+#define SENSOR_CHAR_TIMER_INTERVAL APP_TIMER_TICKS(1000) //1)   // milli second timer intervall.
 
 ads_emg_data_t main_emg_data;
 icm_imu_data_t main_imu_data;
@@ -205,111 +205,116 @@ static uint8_t channel = 0;
 static void timer_timeout_sensor_handler(void * p_context)
 {
     uint32_t err_code = 0;
-    icm_imu_data_t imu_data;
-    if((buf_index % 2) == 0)
-    {
-    	if (imu_index == IMU_ACCELEROMETER)
-    	{
-	    readSensorData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
-	    acc_number++;
-	    if(acc_number > IMU_DEVICE_3)
-	    {
-		acc_number = IMU_DEVICE_1;
-	    }
-	    imu_index = IMU_GYROSCOPE;
-    	}
-    	else if (imu_index == IMU_GYROSCOPE)
-    	{
-    	    readSensorData(&m_sensor_service, ICM_GYRO_XOUT_H, IMU_GYROSCOPE, gro_number, &imu_data);
-	    gro_number++;
-    	    if(gro_number > IMU_DEVICE_3)
-    	    {
-    		gro_number = IMU_DEVICE_1;
-    	    }
-	    imu_index = IMU_MAGNETOMETER;
-    	}
-    	else if (imu_index == IMU_MAGNETOMETER)
-    	{
-	    readSensorData(&m_sensor_service, ICM_EXT_SLV_SENS_DATA_00, IMU_MAGNETOMETER, mag_number, &imu_data);
-	    mag_number++;
-    	    if(mag_number > IMU_DEVICE_3)
-    	    {
-    		mag_number = IMU_DEVICE_1;
-    	    }
-    	    imu_index = IMU_ACCELEROMETER;
-    	}
-	else
-	{
-	    MY_ERROR_CHECK(GENERAL_FAILURE);
-	}
 
-	nrf_gpio_pin_toggle(LED_3);
+    /*
+     * The EMG data is fetched for all channels every time the sensor characteristics timer timeout.
+     */
+#ifndef EMG_NOT_PRESENT
+    ads_get_channel_data(&main_emg_data);
+#else
+    ads_get_simulated_data(&main_emg_data);
+#endif
+
+    uint8_t ads_buf[4] = { 0, 0, 0, 0 };
+
+    ads_buf[0] = (0x10);
+    ads_buf[1] = 4;
+    ads_buf[2] = ((main_emg_data.chan1) >> 8) & 0xff;
+    ads_buf[3] = ((main_emg_data.chan1)) & 0xff;
+    do
+    {
+	err_code = ads_stream_update(&m_sensor_service, ads_buf);
+    } while ((err_code == NRF_ERROR_BUSY) || (err_code == NRF_ERROR_RESOURCES));
+
+    ads_buf[0] = (0x11);
+    ads_buf[1] = 4;
+    ads_buf[2] = ((main_emg_data.chan2) >> 8) & 0xff;
+    ads_buf[3] = ((main_emg_data.chan2)) & 0xff;
+    ads_buf[2] = ((main_emg_data.chan3) >> 8) & 0xff;
+    ads_buf[3] = ((main_emg_data.chan3)) & 0xff;
+    do
+    {
+	err_code = ads_stream_update(&m_sensor_service, ads_buf);
+    } while ((err_code == NRF_ERROR_BUSY) || (err_code == NRF_ERROR_RESOURCES));
+    ads_buf[0] = (0x12);
+    ads_buf[1] = 4;
+    ads_buf[2] = ((main_emg_data.chan4) >> 8) & 0xff;
+    ads_buf[3] = ((main_emg_data.chan4)) & 0xff;
+
+    icm_imu_data_t imu_data;
+#ifndef IMU_NOT_PRESENT
+    if (imu_index == IMU_ACCELEROMETER)
+    {
+	icm_getSensorData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
+	acc_number++;
+	if(acc_number > IMU_DEVICE_3)
+	{
+	    acc_number = IMU_DEVICE_1;
+	}
+	imu_index = IMU_GYROSCOPE;
+    }
+    else if (imu_index == IMU_GYROSCOPE)
+    {
+	icm_getSensorData(&m_sensor_service, ICM_GYRO_XOUT_H, IMU_GYROSCOPE, gro_number, &imu_data);
+	gro_number++;
+	if(gro_number > IMU_DEVICE_3)
+	{
+	    gro_number = IMU_DEVICE_1;
+	}
+	imu_index = IMU_MAGNETOMETER;
+    }
+    else if (imu_index == IMU_MAGNETOMETER)
+    {
+	icm_readMagnetometerData(&m_sensor_service, ICM_EXT_SLV_SENS_DATA_00, IMU_MAGNETOMETER, mag_number, &imu_data);
+	mag_number++;
+	if(mag_number > IMU_DEVICE_3)
+	{
+	    mag_number = IMU_DEVICE_1;
+	}
+	imu_index = IMU_ACCELEROMETER;
     }
     else
     {
-	nrf_gpio_pin_toggle(LED_4);
-#ifndef EMG_NOT_PRESENT
-	ads_get_channel_data(&main_emg_data);
+	MY_ERROR_CHECK(GENERAL_FAILURE);
+    }
 #else
-	ads_get_simulated_data(&main_emg_data);
+    if (imu_index == IMU_ACCELEROMETER)
+    {
+	icm_getSimulatedData(&m_sensor_service, ICM_ACCEL_XOUT_H, IMU_ACCELEROMETER, acc_number, &imu_data);
+	acc_number++;
+	if(acc_number > IMU_DEVICE_3)
+	{
+	    acc_number = IMU_DEVICE_1;
+	}
+	imu_index = IMU_GYROSCOPE;
+    }
+    else if (imu_index == IMU_GYROSCOPE)
+    {
+	icm_getSimulatedData(&m_sensor_service, ICM_GYRO_XOUT_H, IMU_GYROSCOPE, gro_number, &imu_data);
+	gro_number++;
+	if(gro_number > IMU_DEVICE_3)
+	{
+	    gro_number = IMU_DEVICE_1;
+	}
+	imu_index = IMU_MAGNETOMETER;
+    }
+    else if (imu_index == IMU_MAGNETOMETER)
+    {
+	icm_readSimulatedData(&m_sensor_service, ICM_EXT_SLV_SENS_DATA_00, IMU_MAGNETOMETER, mag_number, &imu_data);
+	mag_number++;
+	if(mag_number > IMU_DEVICE_3)
+	{
+	    mag_number = IMU_DEVICE_1;
+	}
+	imu_index = IMU_ACCELEROMETER;
+    }
+    else
+    {
+	MY_ERROR_CHECK(GENERAL_FAILURE);
+    }
 #endif
 
-        uint8_t ads_buf[4] = { 0, 0, 0, 0 };
 
-	ads_buf[0] = (0x10 + channel);
-	ads_buf[1] = 4;
-	if (channel == 0)
-	{
-	    ads_buf[2] = ((main_emg_data.chan1) >> 8) & 0xff;
-	    ads_buf[3] = ((main_emg_data.chan1)) & 0xff;
-	}
-	else if (channel == 1)
-	{
-	    ads_buf[2] = ((main_emg_data.chan2) >> 8) & 0xff;
-	    ads_buf[3] = ((main_emg_data.chan2)) & 0xff;
-	}
-	else if (channel == 2)
-	{
-	    ads_buf[2] = ((main_emg_data.chan3) >> 8) & 0xff;
-	    ads_buf[3] = ((main_emg_data.chan3)) & 0xff;
-	}
-	else if (channel == 3)
-	{
-	    ads_buf[2] = ((main_emg_data.chan4) >> 8) & 0xff;
-	    ads_buf[3] = ((main_emg_data.chan4)) & 0xff;
-	}
-	else
-	{
-	    MY_ERROR_CHECK(GENERAL_FAILURE);
-	}
-
-	do
-	{
-	   err_code = ads_stream_update(&m_sensor_service,
-					ads_buf);
-	} while ((err_code == NRF_ERROR_BUSY) || (err_code == NRF_ERROR_RESOURCES));
-
-	int16_t emg_value = ((ads_buf[2] << 8) | ads_buf[3]);
-	NRF_LOG_DEBUG("Sensor(0x%x) len=%d data = %d",
-		      ads_buf[0],
-		      ads_buf[1],
-		      emg_value);
-	channel++;
-	if( channel > 3 )
-	{
-	    channel = 0;
-	}
-	if (err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-	{
-	    MY_ERROR_CHECK(err_code);
-	}
-	else
-	{
-	    MY_ERROR_LOG(err_code);
-	    NRF_LOG_DEBUG("BLE_ERROR_GATTS_SYS_ATTR_MISSING, enable notifications on your device!");
-	}
-    }
-    buf_index++;
 }
 
 

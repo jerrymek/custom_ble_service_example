@@ -302,40 +302,135 @@ void readMagContinuous(uint8_t imu_number, char reg, char length)
     writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
 }
 
+void readMgnReg(uint8_t imu_number, uint8_t reg, uint8_t *data_p)
+{
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_ADDR, (ICM_I2C_SLV4_ADDR_RNW |
+					     IMU_MAG_ADDR));
+
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_REG, reg);
+	
+    uint8_t reg_data = ICM_I2C_SLV4_CTRL_EN;
+    reg_data &= ~ICM_I2C_SLV4_CTRL_INT_EN;
+    reg_data &= ~ICM_I2C_SLV4_CTRL_REG_DIS;
+    reg_data &= ~(ICM_I2C_SLV4_CTRL_DLY_3 |
+		  ICM_I2C_SLV4_CTRL_DLY_2 |
+		  ICM_I2C_SLV4_CTRL_DLY_1 |
+		  ICM_I2C_SLV4_CTRL_DLY_0);
+
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_CTRL, reg_data);
+
+    uint8_t mct_status = 0;
+    bool slave_ready = false;
+    uint8_t nof_retries = 0;
+    do
+    {
+	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
+	readReg(imu_number, ICM_I2C_MST_STATUS, &mct_status);
+	nof_retries++;
+
+    } while ((mct_status != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) && (nof_retries < 0xff));
+
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    readReg(imu_number, ICM_I2C_SLV4_DI, data_p);
+	
+    if (((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_DONE) != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) &&
+	((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_NACK) != ICM_I2C_MST_STATUS_I2C_SLV4_NACK))
+    {
+	MY_ERROR_CHECK(1);
+    }
+
+    return;
+}
+
+void writeMgnReg(uint8_t imu_number, uint8_t reg, uint8_t data)
+{
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_ADDR, (IMU_MAG_ADDR));
+
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_REG, reg);
+	
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_DO, data);
+	
+    uint8_t reg_data = ICM_I2C_SLV4_CTRL_EN;
+    reg_data &= ~ICM_I2C_SLV4_CTRL_INT_EN;
+    reg_data &= ~ICM_I2C_SLV4_CTRL_REG_DIS;
+    reg_data &= ~(ICM_I2C_SLV4_CTRL_DLY_3 |
+		  ICM_I2C_SLV4_CTRL_DLY_2 |
+		  ICM_I2C_SLV4_CTRL_DLY_1 |
+		  ICM_I2C_SLV4_CTRL_DLY_0);
+
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_CTRL, reg_data);
+
+    uint8_t mct_status = 0;
+    bool slave_ready = false;
+    uint8_t nof_retries = 0;
+    do
+    {
+	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
+	readReg(imu_number, ICM_I2C_MST_STATUS, &mct_status);
+	nof_retries++;
+
+    } while ((mct_status != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) && (nof_retries < 0xff));
+
+    if (((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_DONE) != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) &&
+	((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_NACK) != ICM_I2C_MST_STATUS_I2C_SLV4_NACK))
+    {
+	MY_ERROR_CHECK(1); 
+    }
+
+    return;
+}
+
 void icmInitiateAk09916(uint8_t imu_number)
 {
     writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    clearBits(imu_number, ICM_INT_PIN_CFG, ICM_INT_PIN_CFG_BYPASS_EN); // Disable pass through
+    clearBits(imu_number, ICM_INT_PIN_CFG, ICM_INT_PIN_CFG_BYPASS_EN);
     setBits(imu_number, ICM_I2C_MST_CTRL, 0x17); // I2C_MST_P_NSR bit set and 0x7 => 345.60 kHz, should work up to 400 kHz.
 
     writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
     setBits(imu_number, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_EN);
 
-    uint8_t MAG_AK09916_WHO_AM_I[2] = { 0x48, 0x09 };
+    /*
+     * Read manufacturer code and chip type from the magnetometer.
+     */
+    uint8_t MAG_AK09916_WHO_AM_I[2] = { 0x48, 0x09 }; // Expected values
     uint8_t mag_id[2] = { 0, 0 };
-    uint8_t i = 0;
-    for (i = 0; i < 5; i++)
+    bool successful = false;
+    for (uint8_t i = 0; i < 10; i++)
     {
-//	mag_id[ICM_AK_WIA1] = icmConfigureDevice(imu_number, IMU_MAG_ADDR, ICM_AK_WIA1, 0, true, true);
-//	mag_id[ICM_AK_WIA2] = icmConfigureDevice(imu_number, IMU_MAG_ADDR, ICM_AK_WIA2, 0, true, true);
-
-	readMagnetometerRegister(imu_number, ICM_AK_WIA1, &mag_id[ICM_AK_WIA1]);
-	readMagnetometerRegister(imu_number, ICM_AK_WIA2, &mag_id[ICM_AK_WIA2]);
-	if ((mag_id[ICM_AK_WIA1] == MAG_AK09916_WHO_AM_I[0]) &&
-	    (mag_id[ICM_AK_WIA2] == MAG_AK09916_WHO_AM_I[1]))
+	readMgnReg(imu_number, ICM_AK_WIA1, &mag_id[ICM_AK_WIA1]);
+	readMgnReg(imu_number, ICM_AK_WIA2, &mag_id[ICM_AK_WIA2]);
+	if ((mag_id[ICM_AK_WIA1] ==  MAG_AK09916_WHO_AM_I[0]) &&
+	    (mag_id[ICM_AK_WIA2] ==  MAG_AK09916_WHO_AM_I[1]))
 	{
-	    NRF_LOG_DEBUG("%s(%d) Found chip for the magneotmeter: 0x%x, 0x%x", __FILENAME__, __LINE__, mag_id[ICM_AK_WIA1], mag_id[ICM_AK_WIA2]);
+	    successful = true;
 	    break;
 	}
-	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-	setBits(imu_number, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_RST);
+	else
+	{
+	    /*
+	     * Reset master I2C if fail to read the chip ID.
+	     */
+	    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
+	    setBits(imu_number, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_RST);
+	}
     }
-    /* if (i = 5) */
-    /* { */
-    /* 	NRF_LOG_DEBUG("%s(%d) Found chip for the magneotmeter: 0x%x, 0x%x", __FILENAME__, __LINE__, mag_id[ICM_AK_WIA1], mag_id[ICM_AK_WIA2]); */
-    /* 	MY_ERROR_CHECK(GENERAL_FAILURE); */
-    /* } */
-
+    if (successful)
+    {
+	NRF_LOG_DEBUG("Magn. chip ID: 0x%02x%02x",
+		      mag_id[ICM_AK_WIA1], mag_id[ICM_AK_WIA2]);
+    }
+    else
+    {
+	MY_ERROR_CHECK(0xffff);
+    }
+    
     writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
     writeReg (imu_number, ICM_I2C_MST_CTRL, 0x1D);
     writeReg (imu_number, ICM_I2C_MST_DELAY_CTRL, 0x01);
@@ -347,16 +442,15 @@ void icmInitiateAk09916(uint8_t imu_number)
     writeMagnReg(imu_number, ICM_AK_CNTL2, 0x80); // 100 Hz
     nrf_delay_ms(10);
     readMagContinuous(imu_number, ICM_ACCEL_XOUT_H, 6);
-    //compass_scale = 0.15;
     NRF_LOG_DEBUG("AK09916 initiated!");
 }
 
 void readMagnetometerRegister(uint8_t imu_number,  uint8_t reg,  uint8_t *d)
 {
-    writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeMagnReg(imu_number, ICM_I2C_SLV4_ADDR, (ICM_I2C_SLV4_ADDR_RNW |
+    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeReg(imu_number, ICM_I2C_SLV4_ADDR, (ICM_I2C_SLV4_ADDR_RNW |
 						 IMU_MAG_ADDR));
-    writeMagnReg(imu_number, ICM_I2C_SLV4_REG, reg);
+    writeReg(imu_number, ICM_I2C_SLV4_REG, reg);
 
     uint8_t data = 0;
     data |= ICM_I2C_SLV4_CTRL_EN;  // EN bit [7] (set)
@@ -467,7 +561,7 @@ static int16_t convert( const uint8_t r1, const uint8_t r2 )
     return (int16_t)(i);
 }
 
-void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
+void icm_getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
     /*
      * Read the six raw data registers into data array
@@ -489,14 +583,29 @@ void getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, ui
     imu_data->data_y.u = ((int16_t)convert(rawData[2], rawData[3]));
     imu_data->data_z.u = ((int16_t)convert(rawData[4], rawData[5]));
 
-    NRF_LOG_DEBUG("Sensor(0x%x) len=%d int16 = %d, %d, %d",
+    NRF_LOG_DEBUG("Sensor(0x%x) len=%d x,y,z = %d, %d, %d",
     		  imu_data->device_id,
     		  imu_data->packet_length,
     		  imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
 }
 
-void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
+
+/*
+ * @brief Read sensor data from the IMU.
+ *
+ * @param reg         - Register to read from, supported registers:
+ *                      ICM_ACCEL_XOUT_H, ICM_GYRO_XOUT_H or ICM_AK_HXL
+ *        sensor_type - Which type of sensor data to read, supported types:
+ *                      IMU_ACCELEROMETER, IMU_GYROSCOPE or IMU_MAGNETOMETER
+ *        imu_number  - Which IMU to read data from, supported ID's:
+ *                      IMU1, IMU2 or IMU3
+ */
+void icm_readMagnetometerData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
 {
+    writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
+    writeMagnReg(imu_number, ICM_I2C_SLV0_ADDR, (IMU_MAG_ADDR | ICM_I2C_SLV0_ADDR_READ_FLAG));
+    writeMagnReg(imu_number, ICM_I2C_SLV0_REG, (ICM_I2C_SLV0_REG, IMU_MAG_ADDR));
+    writeMagnReg(imu_number, ICM_I2C_SLV0_CTRL, (ICM_I2C_SLV0_CTRL_EN | ICM_I2C_SLV0_ADDR_READ_FLAG));
     uint8_t device_id = (sensor_type + imu_number);
     uint8_t statusData = 0;
     uint8_t rawData[8];
@@ -533,39 +642,9 @@ void readMagnSensor(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, u
     {
 	NRF_LOG_DEBUG("Magnetometer: something else is wrong with the data!!!");
     }
-}
-
-/*
- * @brief Read sensor data from the IMU.
- *
- * @param reg         - Register to read from, supported registers:
- *                      ICM_ACCEL_XOUT_H, ICM_GYRO_XOUT_H or ICM_AK_HXL
- *        sensor_type - Which type of sensor data to read, supported types:
- *                      IMU_ACCELEROMETER, IMU_GYROSCOPE or IMU_MAGNETOMETER
- *        imu_number  - Which IMU to read data from, supported ID's:
- *                      IMU1, IMU2 or IMU3
- */
-void readSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type, uint8_t imu_number, icm_imu_data_t *imu_data)
-{
-#ifndef IMU_NOT_PRESENT
-    ret_code_t err_code = GENERAL_FAILURE;
-    if (sensor_type == IMU_MAGNETOMETER)
-    {
-	writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-	writeMagnReg(imu_number, ICM_I2C_SLV0_ADDR, (IMU_MAG_ADDR | ICM_I2C_SLV0_ADDR_READ_FLAG));
-	writeMagnReg(imu_number, ICM_I2C_SLV0_REG, (ICM_I2C_SLV0_REG, IMU_MAG_ADDR));
-	writeMagnReg(imu_number, ICM_I2C_SLV0_CTRL, (ICM_I2C_SLV0_CTRL_EN | ICM_I2C_SLV0_ADDR_READ_FLAG));
-    	readMagnSensor(p_sensor_service, reg, sensor_type, imu_number, imu_data);
-	writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-    }
-    else
-    {
-	getSensorData(p_sensor_service, reg, sensor_type, imu_number, imu_data);
-    }
-#else
-#endif
-    err_code = icm_stream_update(p_sensor_service,
-			         imu_data);
+    writeMagnReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
+    MY_ERROR_LOG(icm_stream_update(p_sensor_service,
+			         imu_data));
 }
 
 void readEulerData(uint8_t number)
