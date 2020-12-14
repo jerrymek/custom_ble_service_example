@@ -72,6 +72,7 @@
 #define ICM_I2C_MST_STATUS_I2C_SLV0_NACK 0x01
 #define ICM_INT_STATUS                0x19  // R/C - WOM_INT PLL_RDY_INT DMP_INT1 I2C_MST_INT
 #define ICM_INT_STATUS_1              0x1A  // R/C - RAW_DATA_0_RDY_INT
+#define ICM_INT_STATUS_1_RAW_DATA_0_RDY_INT 0x01 
 #define ICM_INT_STATUS_2              0x1B  // R/C - FIFO_OVERFLOW_INT[4:0]
 #define ICM_INT_STATUS_3              0x1C  // R/C - FIFO_WM_INT[4:0]
 #define ICM_DELAY_TIMEH               0x28  // R DELAY_TIMEH[7:0]
@@ -90,15 +91,15 @@
 #define ICM_GYRO_ZOUT_L               0x38  // R GYRO_ZOUT_L[7:0]
 #define ICM_TEMP_OUT_H                0x39  // R TEMP_OUT_H[7:0]
 #define ICM_TEMP_OUT_L                0x3A  // R TEMP_OUT_L[7:0]
-#define ICM_EXT_SLV_SENS_DATA_00      0x3B  // R EXT_SLV_SENS_DATA_00[7:0]
-#define ICM_EXT_SLV_SENS_DATA_01      0x3C  // R EXT_SLV_SENS_DATA_01[7:0]
-#define ICM_EXT_SLV_SENS_DATA_02      0x3D  // R EXT_SLV_SENS_DATA_02[7:0]
-#define ICM_EXT_SLV_SENS_DATA_03      0x3E  // R EXT_SLV_SENS_DATA_03[7:0]
-#define ICM_EXT_SLV_SENS_DATA_04      0x3F  // R EXT_SLV_SENS_DATA_04[7:0]
-#define ICM_EXT_SLV_SENS_DATA_05      0x40  // R EXT_SLV_SENS_DATA_05[7:0]
-#define ICM_EXT_SLV_SENS_DATA_06      0x41  // R EXT_SLV_SENS_DATA_06[7:0]
-#define ICM_EXT_SLV_SENS_DATA_07      0x42  // R EXT_SLV_SENS_DATA_07[7:0]
-#define ICM_EXT_SLV_SENS_DATA_08      0x43  // R EXT_SLV_SENS_DATA_08[7:0]
+#define ICM_EXT_SLV_SENS_DATA_00      0x3B  // R EXT_SLV_SENS_DATA_00[7:0] Magnetometer status 1 ST1
+#define ICM_EXT_SLV_SENS_DATA_01      0x3C  // R EXT_SLV_SENS_DATA_01[7:0] Magnetometer X LSB    HXL
+#define ICM_EXT_SLV_SENS_DATA_02      0x3D  // R EXT_SLV_SENS_DATA_02[7:0] Magnetometer X MSB    HXH
+#define ICM_EXT_SLV_SENS_DATA_03      0x3E  // R EXT_SLV_SENS_DATA_03[7:0] Magnetometer Y LSB    HYL
+#define ICM_EXT_SLV_SENS_DATA_04      0x3F  // R EXT_SLV_SENS_DATA_04[7:0] Magnetometer Y MSB    HYH
+#define ICM_EXT_SLV_SENS_DATA_05      0x40  // R EXT_SLV_SENS_DATA_05[7:0] Magnetometer Z LSB    HZL
+#define ICM_EXT_SLV_SENS_DATA_06      0x41  // R EXT_SLV_SENS_DATA_06[7:0] Magnetometer Z MSB    HZH
+#define ICM_EXT_SLV_SENS_DATA_07      0x42  // R EXT_SLV_SENS_DATA_07[7:0] Magnetometer status 2 or TMPS Todo: Check the register map
+#define ICM_EXT_SLV_SENS_DATA_08      0x43  // R EXT_SLV_SENS_DATA_08[7:0] Magnetometer status 2 
 #define ICM_EXT_SLV_SENS_DATA_09      0x44  // R EXT_SLV_SENS_DATA_09[7:0]
 #define ICM_EXT_SLV_SENS_DATA_10      0x45  // R EXT_SLV_SENS_DATA_10[7:0]
 #define ICM_EXT_SLV_SENS_DATA_11      0x46  // R EXT_SLV_SENS_DATA_11[7:0]
@@ -225,7 +226,7 @@
 #define ICM_I2C_MST_CTRL_I2C_MST_CLK0  0x01
 
 
-#define ICM_I2C_MST_DELAY_CTRL        0x02  // R/W DELAY_ES_SHADOW - I2C_SLV4_DELAY_EN I2C_SLV3_DELAY_EN I2C_SLV2_DELAY_ENI2C_SLV1_DELAY_EN I2C_SLV0_DELAY_EN
+#define ICM_I2C_MST_DELAY_CTRL 0x02  // R/W DELAY_ES_SHADOW - I2C_SLV4_DELAY_EN I2C_SLV3_DELAY_EN I2C_SLV2_DELAY_ENI2C_SLV1_DELAY_EN I2C_SLV0_DELAY_EN
 #define ICM_I2C_SLV0_ADDR 0x03  // R/W I2C_SLV0_RNW I2C_ID_0[6:0]
 #define ICM_I2C_SLV0_ADDR_RNW   0x80
 #define ICM_I2C_SLV0_ADDR_ID_06 0x40
@@ -235,33 +236,40 @@
 #define ICM_I2C_SLV0_ADDR_ID_02 0x04
 #define ICM_I2C_SLV0_ADDR_ID_01 0x02
 #define ICM_I2C_SLV0_ADDR_ID_00 0x01
-#define ICM_I2C_SLV0_ADDR_READ_FLAG   0x80
-#define ICM_I2C_SLV0_REG              0x04  // R/W I2C_SLV0_REG[7:0]
-#define ICM_I2C_SLV0_CTRL             0x05  // R/W I2C_SLV0_EN I2C_SLV0_BYTE_SW I2C_SLV0_REG_DIS I2C_SLV0_GRP I2C_SLV0_LENG[3:0]
-#define ICM_I2C_SLV0_CTRL_EN          0x80
-#define ICM_I2C_SLV0_DO               0x06  // R/W I2C_SLV0_DO[7:0]
-#define ICM_I2C_SLV1_ADDR             0x07  // R/W I2C_SLV1_RNW I2C_ID_1[6:0]
-#define ICM_I2C_SLV1_REG              0x08  // R/W I2C_SLV1_REG[7:0]
-#define ICM_I2C_SLV1_CTRL             0x09   // R/W I2C_SLV1_EN I2C_SLV1_BYTE_SW I2C_SLV1_REG_DIS I2C_SLV1_GRP I2C_SLV1_LENG[3:0]
-#define ICM_I2C_SLV1_DO               0x0A  // R/W I2C_SLV1_DO[7:0]
-#define ICM_I2C_SLV2_ADDR             0x0B  // R/W I2C_SLV2_RNW I2C_ID_2[6:0]
-#define ICM_I2C_SLV2_REG              0x0C  // R/W I2C_SLV2_REG[7:0]
-#define ICM_I2C_SLV2_CTRL             0x0D  // R/W I2C_SLV2_EN I2C_SLV2_BYTE_SW I2C_SLV2_REG_DIS I2C_SLV2_GRP I2C_SLV2_LENG[3:0]
-#define ICM_I2C_SLV2_DO               0x0E  // R/W I2C_SLV2_DO[7:0]
-#define ICM_I2C_SLV3_ADDR             0x0F  // R/W I2C_SLV3_RNW I2C_ID_3[6:0]
-#define ICM_I2C_SLV3_REG              0x10  // R/W I2C_SLV3_REG[7:0]
-#define ICM_I2C_SLV3_CTRL             0x11  // R/W I2C_SLV3_EN I2C_SLV3_BYTE_SW I2C_SLV3_REG_DIS I2C_SLV3_GRP I2C_SLV3_LENG[3:0]
-#define ICM_I2C_SLV3_DO               0x12  // R/W I2C_SLV3_DO[7:0]
-#define ICM_I2C_SLV4_ADDR             0x13  // R/W I2C_SLV4_RNW I2C_ID_4[6:0]
-#define ICM_I2C_SLV4_ADDR_RNW   0x80 // the 7th bit is set then the transaction is a read, otherwise if it is not set it is a write
-#define ICM_I2C_SLV4_ADDR_ID_06 0x40
+#define ICM_I2C_SLV0_REG  0x04  // R/W I2C_SLV0_REG[7:0]
+
+#define ICM_I2C_SLV0_CTRL 0x05  // R/W
+#define ICM_I2C_SLV0_CTRL_EN      0x80
+#define ICM_I2C_SLV0_CTRL_BYTE_SW 0x40 
+#define ICM_I2C_SLV0_CTRL_REG_DIS 0x20
+#define ICM_I2C_SLV0_CTRL_GRP     0x10
+#define ICM_I2C_SLV0_CTRL_LEN3    0x08 // Number of bytes to read from I2C slave 0.
+#define ICM_I2C_SLV0_CTRL_LEN2    0x04 // The Length is set in NUM_MAGN_DATA, see the c-file.
+#define ICM_I2C_SLV0_CTRL_LEN1    0x02
+#define ICM_I2C_SLV0_CTRL_LEN0    0x01
+#define ICM_I2C_SLV0_DO   0x06  // R/W I2C_SLV0_DO[7:0]
+#define ICM_I2C_SLV1_ADDR 0x07  // R/W I2C_SLV1_RNW I2C_ID_1[6:0]
+#define ICM_I2C_SLV1_REG  0x08  // R/W I2C_SLV1_REG[7:0]
+#define ICM_I2C_SLV1_CTRL 0x09  // R/W I2C_SLV1_EN I2C_SLV1_BYTE_SW I2C_SLV1_REG_DIS I2C_SLV1_GRP I2C_SLV1_LENG[3:0]
+#define ICM_I2C_SLV1_DO   0x0A  // R/W I2C_SLV1_DO[7:0]
+#define ICM_I2C_SLV2_ADDR 0x0B  // R/W I2C_SLV2_RNW I2C_ID_2[6:0]
+#define ICM_I2C_SLV2_REG  0x0C  // R/W I2C_SLV2_REG[7:0]
+#define ICM_I2C_SLV2_CTRL 0x0D  // R/W I2C_SLV2_EN I2C_SLV2_BYTE_SW I2C_SLV2_REG_DIS I2C_SLV2_GRP I2C_SLV2_LENG[3:0]
+#define ICM_I2C_SLV2_DO   0x0E  // R/W I2C_SLV2_DO[7:0]
+#define ICM_I2C_SLV3_ADDR 0x0F  // R/W I2C_SLV3_RNW I2C_ID_3[6:0]
+#define ICM_I2C_SLV3_REG  0x10  // R/W I2C_SLV3_REG[7:0]
+#define ICM_I2C_SLV3_CTRL 0x11  // R/W I2C_SLV3_EN I2C_SLV3_BYTE_SW I2C_SLV3_REG_DIS I2C_SLV3_GRP I2C_SLV3_LENG[3:0]
+#define ICM_I2C_SLV3_DO   0x12  // R/W I2C_SLV3_DO[7:0]
+#define ICM_I2C_SLV4_ADDR 0x13  // R/W I2C_SLV4_RNW I2C_ID_4[6:0]
+#define ICM_I2C_SLV4_ADDR_RNW   0x80 // If the 7th bit is set the transaction is a read, otherwise it is a write.
+#define ICM_I2C_SLV4_ADDR_ID_06 0x40 // Address to the device on the secondary I2C bus, i.e. the magnetometer.
 #define ICM_I2C_SLV4_ADDR_ID_05 0x20
 #define ICM_I2C_SLV4_ADDR_ID_04 0x10
 #define ICM_I2C_SLV4_ADDR_ID_03 0x08
 #define ICM_I2C_SLV4_ADDR_ID_02 0x04
 #define ICM_I2C_SLV4_ADDR_ID_01 0x02
 #define ICM_I2C_SLV4_ADDR_ID_00 0x01
-#define ICM_I2C_SLV4_REG              0x14  // R/W I2C_SLV4_REG[7:0]
+#define ICM_I2C_SLV4_REG  0x14  // R/W I2C_SLV4_REG[7:0]
 #define ICM_I2C_SLV4_CTRL 0x15  // R/W I2C_SLV4_EN I2C_SLV4_BYTE_SW I2C_SLV4_REG_DIS I2C_SLV4_DLY[4:0]
 #define ICM_I2C_SLV4_CTRL_EN      0x80
 #define ICM_I2C_SLV4_CTRL_INT_EN  0x40
@@ -271,8 +279,8 @@
 #define ICM_I2C_SLV4_CTRL_DLY_2   0x04
 #define ICM_I2C_SLV4_CTRL_DLY_1   0x02
 #define ICM_I2C_SLV4_CTRL_DLY_0   0x01
-#define ICM_I2C_SLV4_DO               0x16  // R/W I2C_SLV4_DO[7:0]
-#define ICM_I2C_SLV4_DI               0x17  // R I2C_SLV4_DI[7:0]
+#define ICM_I2C_SLV4_DO   0x16  // R/W I2C_SLV4_DO[7:0]
+#define ICM_I2C_SLV4_DI   0x17  // R I2C_SLV4_DI[7:0]
 
 /*
  * Start Register map for AK09916
@@ -293,7 +301,7 @@
 #define ICM_AK_HYH     0x14  // HYH HY15 HY14 HY13 HY12 HY11 HY10 HY9 HY8
 #define ICM_AK_HZL     0x15  // HZL HZ7 HZ6 HZ5 HZ4 HZ3 HZ2 HZ1 HZ0
 #define ICM_AK_HZH     0x16  // HZH HZ15 HZ14 HZ13 HZ12 HZ11 HZ10 HZ9 HZ8
-#define ICM_AK_TMPS    0x17  // TMPS 0 0 0 0 0 0 0 0
+#define ICM_AK_TMPS    0x17  // TMPS 0 0 0 0 0 0 0 0 
 #define ICM_AK_ST2     0x18  // ST2 0 RSV30 RSV29 RSV28 HOFL 0 0 0
 
 /*
@@ -301,6 +309,12 @@
  */
 #define ICM_AK_CNTL1   0x30  // CNTL1 0 0 0 0 0 0 0 0
 #define ICM_AK_CNTL2   0x31  // 0 0 0 MODE4 MODE3 MODE2 MODE1 MODE0
+#define ICM_AK_CNTL2_MODE0 0x01
+#define ICM_AK_CNTL2_MODE1 0x02
+#define ICM_AK_CNTL2_MODE2 0x04
+#define ICM_AK_CNTL2_MODE3 0x08
+#define ICM_AK_CNTL2_MODE4 0x10 // 100 Hz
+
 #define ICM_AK_CNTL3   0x32  // 0 0 0 0 0 0 0 SRST
 
 /*
@@ -512,5 +526,37 @@ void readMagnData(uint8_t imu_addr);
  * @return -
  */
 void icm_get_imu_data(icm_imu_data_t *imu_data);
+
+/**
+ * @brief Initiate the magnetometer.
+ *
+ * @param -
+ * @return -
+ */
+void icmInitiateAk09916(uint8_t imu_number);
+
+/**
+ * @brief Get the chip ID from the magnetometer.
+ *
+ * @param -
+ * @return -
+ */
+void icm_read_mgn_chip_id (uint8_t imu_number);
+
+/**
+ * @brief Write a single byte to a register in the magnetometer.
+ *
+ * @param -
+ * @return -
+ */
+void writeMgnReg(uint8_t imu_number, uint8_t reg, uint8_t data);
+
+/**
+ * @brief Read a single byte to a register in the magnetometer.
+ *
+ * @param -
+ * @return -
+ */
+void readMgnReg(uint8_t imu_number, uint8_t reg, uint8_t *data_p);
 
 #endif /* _ICM20948_DRV_H_ */

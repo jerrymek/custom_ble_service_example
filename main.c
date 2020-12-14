@@ -1188,7 +1188,6 @@ int main(void)
     icmSetLowPowerMode(IMU_DEVICE_1, false);
     icmInitiateIcm20948(IMU_DEVICE_1);
     icmInitiateAk09916(IMU_DEVICE_1);
-//    icmReadTempData(IMU_DEVICE_1);
 #endif
     for (;;)
     {
