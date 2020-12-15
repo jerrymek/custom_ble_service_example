@@ -170,64 +170,67 @@ void icmInitI2c(void)
     io_i2cSetChannel(0);
 }
 
-void writeReg (uint8_t imu_number, uint8_t reg, uint8_t data)
+void writeReg (uint8_t imu_number, uint8_t register_bank, uint8_t reg, uint8_t data)
 {
+    char bank_buf[2] = { ICM_REG_BANK_SEL, register_bank };
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], bank_buf, 2, TX_NO_STOP));
     char tx_buf[2] = { reg, data };
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 2, TX_NO_STOP));
 }
 
-void readReg (uint8_t imu_number, uint8_t reg, uint8_t *data)
+void readReg (uint8_t imu_number, uint8_t register_bank, uint8_t reg, uint8_t *data)
 {
+    char bank_buf[2] = { ICM_REG_BANK_SEL, register_bank };
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], bank_buf, 2, TX_NO_STOP));
     char tx_buf[1] = { reg };
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 1, TX_NO_STOP));
     MY_ERROR_CHECK(io_i2cRx(imu_addr[imu_number], data, 1));
 }
 
-void readRegs (uint8_t imu_number, uint8_t reg, uint8_t *data, uint8_t length)
+void readRegs (uint8_t imu_number, uint8_t register_bank, uint8_t reg, uint8_t *data, uint8_t length)
 {
+    char bank_buf[2] = { ICM_REG_BANK_SEL, register_bank };
+    MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], bank_buf, 2, TX_NO_STOP));
     char tx_buf[1] = { reg };
     MY_ERROR_CHECK(io_i2cTx(imu_addr[imu_number], tx_buf, 1, TX_NO_STOP));
     MY_ERROR_CHECK(io_i2cRx(imu_addr[imu_number], data, length));
 }
 
-void setBits(uint8_t imu_number, uint8_t reg, uint8_t bits)
+void setBits(uint8_t imu_number, uint8_t register_bank, uint8_t reg, uint8_t bits)
 {
     uint8_t d = 0;
-    readReg(imu_number, reg, &d);
+    readReg(imu_number, register_bank, reg, &d);
     d |= bits;
-    writeReg (imu_number, reg, d);
+    writeReg (imu_number, register_bank, reg, d);
 }
 
-void clearBits(uint8_t imu_number, uint8_t reg, uint8_t data)
+void clearBits(uint8_t imu_number, uint8_t register_bank, uint8_t reg, uint8_t data)
 {
     uint8_t d = 0;
-    readReg(imu_number, reg, &d);
+    readReg(imu_number, register_bank, reg, &d);
     d &= ~data;
-    writeReg (imu_number, reg, d);
+    writeReg (imu_number, register_bank, reg, d);
 }
 
 void icmReadChipId(uint8_t imu_number)
 {
     uint8_t result = 0;
-    readReg (imu_number, ICM_WHO_AM_I, &result);
+    readReg (imu_number, ICM_USER_BANK_0, ICM_WHO_AM_I, &result);
     NRF_LOG_DEBUG("chip ID = 0x%x", result);
 }
 
 void icmDeviceReset(uint8_t imu_number)
 {
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0 );
-    writeReg (imu_number, ICM_PWR_MGMT_1, ICM_PWR_MGMT_1_DEVICE_RESET);
+    writeReg (imu_number, ICM_USER_BANK_0, ICM_PWR_MGMT_1, ICM_PWR_MGMT_1_DEVICE_RESET);
     nrf_delay_ms(100);
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0 );
-    writeReg (imu_number, ICM_PWR_MGMT_1, ICM_PWR_MGMT_1_CLKSEL_0x1); // Auto clock select
+    writeReg (imu_number, ICM_USER_BANK_0, ICM_PWR_MGMT_1, ICM_PWR_MGMT_1_CLKSEL_0x1); // Auto clock select
     NRF_LOG_DEBUG("ICM 20948 reset done.");
 }
 
 void icmSleepMode(uint8_t imu_number, bool mode)
 {
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0 );
     uint8_t d = 0;
-    readReg(imu_number, ICM_PWR_MGMT_1, &d);
+    readReg(imu_number, ICM_USER_BANK_0, ICM_PWR_MGMT_1, &d);
     if (mode == true)
     {
 	d |= ICM_PWR_MGMT_1_SLEEP;
@@ -236,46 +239,41 @@ void icmSleepMode(uint8_t imu_number, bool mode)
     {
 	d &= ~ICM_PWR_MGMT_1_SLEEP;
     }
-    writeReg (imu_number, ICM_PWR_MGMT_1, d);
+    writeReg (imu_number, ICM_USER_BANK_0, ICM_PWR_MGMT_1, d);
     NRF_LOG_DEBUG("ICM 20948 Sleep mode %d", mode);
 }
 
 void icmSetLowPowerMode(uint8_t imu_number, bool mode)
 {
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0 );
     uint8_t d = 0;
-    readReg(imu_number, ICM_PWR_MGMT_1, &d);
     if (mode==true)
     {
-	d |= ICM_PWR_MGMT_1_SLEEP;
+	setBits(imu_number, ICM_USER_BANK_0, ICM_PWR_MGMT_1, ICM_PWR_MGMT_1_SLEEP);
     }
     else
     {
-	d &= ~ICM_PWR_MGMT_1_SLEEP;
+	clearBits(imu_number, ICM_USER_BANK_0, ICM_PWR_MGMT_1, ICM_PWR_MGMT_1_SLEEP);
     }
-    writeReg (imu_number, ICM_PWR_MGMT_1, d);
     NRF_LOG_DEBUG("ICM 20948 low power mode %d", mode);
 }
 
 void icmInitiateIcm20948(uint8_t imu_number)
 {
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-    writeReg (imu_number, ICM_LP_CONFIG, (ICM_LP_CONFIG_I2C_MST_CYCLE |
-					  ICM_LP_CONFIG_ACCEL_CYCLE |
-					  ICM_LP_CONFIG_GYRO_CYCLE));
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_2);
-    setBits(imu_number, ICM_ACCEL_CONFIG_1, (ICM_ACCEL_CONFIG_1_FS_SEL_1 | // 0b0110 = ±16g
-					     ICM_ACCEL_CONFIG_1_FS_SEL_0));
-    setBits(imu_number, ICM_GYRO_CONFIG_1, (ICM_GYRO_CONFIG_1_FS_SEL_2 | // 0b0110 = ±2000 dps
-					    ICM_GYRO_CONFIG_1_FS_SEL_1));
-    setBits(imu_number, ICM_ACCEL_CONFIG_1, (ICM_ACCEL_CONFIG_1_DLPFCFG_2 | // Accelerometer low pass filter configuration
-					     ICM_ACCEL_CONFIG_1_DLPFCFG_1 |
-					     ICM_ACCEL_CONFIG_1_DLPFCFG_0));
-    setBits(imu_number, ICM_GYRO_CONFIG_1, (ICM_GYRO_CONFIG_1_DLPFCFG_5 | // Gyroscope low pass filter configuration
-					    ICM_GYRO_CONFIG_1_DLPFCFG_4 |
-					    ICM_GYRO_CONFIG_1_DLPFCFG_3));
-    clearBits(imu_number, ICM_ACCEL_CONFIG_1, ICM_ACCEL_CONFIG_1_FCHOICE); // Disable LP-filter on accel
-    clearBits(imu_number, ICM_GYRO_CONFIG_1, ICM_GYRO_CONFIG_1_FCHOICE);    // Disable LP-filter on gyro
+    writeReg (imu_number, ICM_USER_BANK_0, ICM_LP_CONFIG, (ICM_LP_CONFIG_I2C_MST_CYCLE |
+							   ICM_LP_CONFIG_ACCEL_CYCLE |
+							   ICM_LP_CONFIG_GYRO_CYCLE));
+    setBits(imu_number, ICM_USER_BANK_2, ICM_ACCEL_CONFIG_1, (ICM_ACCEL_CONFIG_1_FS_SEL_1 |   // 0b0110 = ±16g
+							      ICM_ACCEL_CONFIG_1_FS_SEL_0));
+    setBits(imu_number, ICM_USER_BANK_2, ICM_GYRO_CONFIG_1, (ICM_GYRO_CONFIG_1_FS_SEL_2 |     // 0b0110 = ±2000 dps
+							     ICM_GYRO_CONFIG_1_FS_SEL_1));
+    setBits(imu_number, ICM_USER_BANK_2, ICM_ACCEL_CONFIG_1, (ICM_ACCEL_CONFIG_1_DLPFCFG_2 |  // Configure Accel LP filter
+							      ICM_ACCEL_CONFIG_1_DLPFCFG_1 |
+							      ICM_ACCEL_CONFIG_1_DLPFCFG_0));
+    setBits(imu_number, ICM_USER_BANK_2, ICM_GYRO_CONFIG_1, (ICM_GYRO_CONFIG_1_DLPFCFG_5 |    // Configure Gyro LP filter
+							     ICM_GYRO_CONFIG_1_DLPFCFG_4 |
+							     ICM_GYRO_CONFIG_1_DLPFCFG_3));
+    clearBits(imu_number, ICM_USER_BANK_2, ICM_ACCEL_CONFIG_1, ICM_ACCEL_CONFIG_1_FCHOICE);   // Disable LP-filter on accel
+    clearBits(imu_number, ICM_USER_BANK_2, ICM_GYRO_CONFIG_1, ICM_GYRO_CONFIG_1_FCHOICE);     // Disable LP-filter on gyro
     NRF_LOG_DEBUG("ICM 20948 Initiated");
 }
 
@@ -289,98 +287,62 @@ void readMagContinuous(uint8_t imu_number, char reg, char length)
 {
     writeMgnReg(imu_number, ICM_AK_CNTL2, ICM_AK_CNTL2_MODE4);
 
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg (imu_number, ICM_I2C_SLV0_CTRL, 0x0);
-    writeReg (imu_number, ICM_I2C_SLV0_ADDR, (ICM_I2C_SLV0_ADDR_RNW | IMU_MAG_ADDR));
-    writeReg (imu_number, ICM_I2C_SLV0_REG, reg);
-    writeReg (imu_number, ICM_I2C_SLV0_DO, 0xff);
-    writeReg (imu_number, ICM_I2C_SLV0_CTRL, (0xD0 | length));
-    writeReg (imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
+    writeReg (imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_CTRL, 0x0);
+    writeReg (imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_ADDR, (ICM_I2C_SLV0_ADDR_RNW | IMU_MAG_ADDR));
+    writeReg (imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_REG, reg);
+    writeReg (imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_DO, 0xff);
+    writeReg (imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_CTRL, (0xD0 | length));
+    writeReg (imu_number, ICM_USER_BANK_3, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
 }
 
 void readMgnReg(uint8_t imu_number, uint8_t reg, uint8_t *data_p)
 {
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV4_ADDR, (ICM_I2C_SLV4_ADDR_RNW |
-					     IMU_MAG_ADDR));
-
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV4_REG, reg);
-	
-    uint8_t reg_data = ICM_I2C_SLV4_CTRL_EN;
-    reg_data &= ~ICM_I2C_SLV4_CTRL_INT_EN;
-    reg_data &= ~ICM_I2C_SLV4_CTRL_REG_DIS;
-    reg_data &= ~(ICM_I2C_SLV4_CTRL_DLY_3 |
-		  ICM_I2C_SLV4_CTRL_DLY_2 |
-		  ICM_I2C_SLV4_CTRL_DLY_1 |
-		  ICM_I2C_SLV4_CTRL_DLY_0);
-
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV4_CTRL, reg_data);
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_ADDR, (ICM_I2C_SLV4_ADDR_RNW |
+							      IMU_MAG_ADDR));
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_REG, reg);
+    uint8_t data = 0;
+    data |= ICM_I2C_SLV4_CTRL_EN;
+    data = ~ICM_I2C_SLV4_CTRL_INT_EN;
+    data = ~ICM_I2C_SLV4_CTRL_REG_DIS;
+    data = ~(ICM_I2C_SLV4_CTRL_DLY_4 |
+	     ICM_I2C_SLV4_CTRL_DLY_3 |
+	     ICM_I2C_SLV4_CTRL_DLY_2 |
+	     ICM_I2C_SLV4_CTRL_DLY_1 |
+	     ICM_I2C_SLV4_CTRL_DLY_0);
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_CTRL, data);
 
     uint8_t mct_status = 0;
     bool slave_ready = false;
     uint8_t nof_retries = 0;
+
     do
     {
-	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-	readReg(imu_number, ICM_I2C_MST_STATUS, &mct_status);
+	readReg(imu_number, ICM_USER_BANK_0, ICM_I2C_MST_STATUS, &mct_status);
 	nof_retries++;
 
     } while ((mct_status != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) && (nof_retries < 0xff));
 
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    readReg(imu_number, ICM_I2C_SLV4_DI, data_p);
+    readReg(imu_number, ICM_USER_BANK_3,  ICM_I2C_SLV4_DI, data_p);
 	
     if (((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_DONE) != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) &&
 	((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_NACK) != ICM_I2C_MST_STATUS_I2C_SLV4_NACK))
     {
 	MY_ERROR_CHECK(1);
     }
-
-    return;
 }
 
 void writeMgnReg(uint8_t imu_number, uint8_t reg, uint8_t data)
 {
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV4_ADDR, (IMU_MAG_ADDR));
-
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV4_REG, reg);
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_ADDR, (IMU_MAG_ADDR));
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_REG, reg);
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_DO, data);
 	
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV4_DO, data);
-	
-    uint8_t reg_data = ICM_I2C_SLV4_CTRL_EN;
-    reg_data &= ~ICM_I2C_SLV4_CTRL_INT_EN;
-    reg_data &= ~ICM_I2C_SLV4_CTRL_REG_DIS;
-    reg_data &= ~(ICM_I2C_SLV4_CTRL_DLY_3 |
-		  ICM_I2C_SLV4_CTRL_DLY_2 |
-		  ICM_I2C_SLV4_CTRL_DLY_1 |
-		  ICM_I2C_SLV4_CTRL_DLY_0);
-
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV4_CTRL, reg_data);
-
-    uint8_t mct_status = 0;
-    bool slave_ready = false;
-    uint8_t nof_retries = 0;
-    do
-    {
-	writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-	readReg(imu_number, ICM_I2C_MST_STATUS, &mct_status);
-	nof_retries++;
-
-    } while ((mct_status != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) && (nof_retries < 0xff));
-
-    if (((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_DONE) != ICM_I2C_MST_STATUS_I2C_SLV4_DONE) &&
-	((mct_status & ICM_I2C_MST_STATUS_I2C_SLV4_NACK) != ICM_I2C_MST_STATUS_I2C_SLV4_NACK))
-    {
-	MY_ERROR_CHECK(1); 
-    }
-
-    return;
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_CTRL, ICM_I2C_SLV4_CTRL_EN);
+    clearBits(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV4_CTRL, ~(ICM_I2C_SLV4_CTRL_REG_DIS |
+								ICM_I2C_SLV4_CTRL_DLY_3 |
+								ICM_I2C_SLV4_CTRL_DLY_2 |
+								ICM_I2C_SLV4_CTRL_DLY_1 |
+								ICM_I2C_SLV4_CTRL_DLY_0));
 }
 
 void icm_read_magn_chip_id (uint8_t imu_number)
@@ -391,10 +353,12 @@ void icm_read_magn_chip_id (uint8_t imu_number)
     uint8_t MAG_AK09916_WHO_AM_I[2] = { 0x48, 0x09 }; // Expected values
     uint8_t mag_id[2] = { 0, 0 };
     bool successful = false;
-    for (uint8_t i = 0; i < 10; i++)
+    for (uint8_t i = 0; i < 5; i++)
     {
 	readMgnReg(imu_number, ICM_AK_WIA1, &mag_id[ICM_AK_WIA1]);
 	readMgnReg(imu_number, ICM_AK_WIA2, &mag_id[ICM_AK_WIA2]);
+	NRF_LOG_DEBUG("Magn. chip ID: 0x%02x%02x",
+		      mag_id[ICM_AK_WIA1], mag_id[ICM_AK_WIA2]);
 	if ((mag_id[ICM_AK_WIA1] ==  MAG_AK09916_WHO_AM_I[0]) &&
 	    (mag_id[ICM_AK_WIA2] ==  MAG_AK09916_WHO_AM_I[1]))
 	{
@@ -406,8 +370,7 @@ void icm_read_magn_chip_id (uint8_t imu_number)
 	    /*
 	     * Reset master I2C if fail to read the chip ID.
 	     */
-	    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-	    setBits(imu_number, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_RST);
+	    setBits(imu_number, ICM_USER_BANK_0, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_RST);
 	}
     }
     if (successful)
@@ -421,36 +384,62 @@ void icm_read_magn_chip_id (uint8_t imu_number)
     }
 }
 
+void icm_i2cMasterPassthrough(uint8_t imu_number, bool passTrough)
+{
+    if (passTrough)
+    {
+	setBits(imu_number, ICM_USER_BANK_0, ICM_INT_PIN_CFG, ICM_INT_PIN_CFG_BYPASS_EN);
+    }
+    else
+    {
+	clearBits(imu_number, ICM_USER_BANK_0, ICM_INT_PIN_CFG, ICM_INT_PIN_CFG_BYPASS_EN);
+    }
+}
+
+void icm_i2cMasterEnable(uint8_t imu_number, bool enable)
+{
+    icm_i2cMasterPassthrough(imu_number, false);
+
+    clearBits(imu_number, ICM_USER_BANK_3, ICM_I2C_MST_CTRL, 0x0f);
+    setBits(imu_number, ICM_USER_BANK_3, ICM_I2C_MST_CTRL, (ICM_I2C_MST_CTRL_I2C_MST_CLK2 |
+							       ICM_I2C_MST_CTRL_I2C_MST_CLK1 |
+							       ICM_I2C_MST_CTRL_I2C_MST_CLK0));
+    setBits(imu_number, ICM_USER_BANK_3, ICM_I2C_MST_CTRL, ICM_I2C_MST_CTRL_I2C_MST_P_NSR);
+
+    if(enable)
+    {
+	setBits(imu_number, ICM_USER_BANK_0, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_EN);
+    }
+    else
+    {
+	clearBits(imu_number, ICM_USER_BANK_0, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_EN);
+    }
+}
+
 void icmInitiateAk09916(uint8_t imu_number)
 {
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-    clearBits(imu_number, ICM_INT_PIN_CFG, ICM_INT_PIN_CFG_BYPASS_EN);
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    setBits(imu_number, ICM_I2C_MST_CTRL, (ICM_I2C_MST_CTRL_I2C_MST_P_NSR |  // 0x17);
-					   ICM_I2C_MST_CTRL_I2C_MST_CLK2 |   // I2C_MST_P_NSR bit set and 0x7 => 345.60 kHz, should work up to 400 kHz.
-					   ICM_I2C_MST_CTRL_I2C_MST_CLK1 |
-					   ICM_I2C_MST_CTRL_I2C_MST_CLK0));
-
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-    setBits(imu_number, ICM_USER_CTRL, ICM_USER_CTRL_I2C_MST_EN);
-
+    icm_i2cMasterPassthrough(imu_number, false);
+    icm_i2cMasterEnable(imu_number, true);
     icm_read_magn_chip_id (imu_number);
 
-    /*
-     * Setup slave 0.
-     */
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_3);
-    writeReg(imu_number, ICM_I2C_SLV0_ADDR, (ICM_I2C_SLV0_ADDR_RNW |
-					     IMU_MAG_ADDR));
-    writeReg(imu_number, ICM_I2C_SLV0_REG, ICM_AK_ST1);
-    
-    writeReg(imu_number, ICM_I2C_SLV0_CTRL, (ICM_I2C_SLV0_CTRL_EN |
-					     ICM_I2C_SLV0_CTRL_BYTE_SW |
-					     ICM_I2C_SLV0_CTRL_REG_DIS |
-					     ICM_I2C_SLV0_CTRL_GRP |
-					     (NUM_MAGN_DATA % 16)));
+    clearBits(imu_number, ICM_USER_BANK_0, ICM_INT_PIN_CFG, ICM_INT_PIN_CFG_BYPASS_EN);
+    setBits(imu_number, ICM_USER_BANK_3, ICM_I2C_MST_CTRL, (ICM_I2C_MST_CTRL_I2C_MST_P_NSR |  // 0x17);
+							    ICM_I2C_MST_CTRL_I2C_MST_CLK2 |   // I2C_MST_P_NSR bit set and
+							    ICM_I2C_MST_CTRL_I2C_MST_CLK1 |   // 0x7 => 345.60 kHz,
+							    ICM_I2C_MST_CTRL_I2C_MST_CLK0));  // should work up to 400 kHz.
 
-    readMagContinuous(imu_number, ICM_EXT_SLV_SENS_DATA_00, NUM_MAGN_DATA);
+    ICM_AK_CNTL2, 
+    /*
+     * Configure slave 0.
+     */
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_ADDR, (ICM_I2C_SLV0_ADDR_RNW | // address
+							      IMU_MAG_ADDR));
+    writeReg(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_REG, ICM_AK_ST1);              // subAddress
+    setBits(imu_number, ICM_USER_BANK_3, ICM_I2C_SLV0_CTRL, ((NUM_MAGN_DATA) |        // 9 data (ICM_I2C_SLV0_CTRL_LEN3 + ICM_I2C_SLV0_CTRL_LEN0)
+							      ICM_I2C_SLV0_CTRL_EN |
+							      ICM_I2C_SLV0_CTRL_BYTE_SW |
+							      ICM_I2C_SLV0_CTRL_REG_DIS |
+							      ICM_I2C_SLV0_CTRL_GRP));
 
     NRF_LOG_DEBUG("AK09916 initiated!");
 }
@@ -504,7 +493,7 @@ void icm_getSensorData(ble_ss_t *p_sensor_service, char reg, uint8_t sensor_type
      * Read the six raw data registers into data array
      */
     uint8_t rawData[6];
-    readRegs(imu_number, reg, rawData, 6);
+    readRegs(imu_number, ICM_USER_BANK_0, reg, rawData, 6);
 
     /*
      * Get device ID and packet length.
@@ -545,16 +534,16 @@ void icm_readMagnetometerData(ble_ss_t *p_sensor_service, char reg, uint8_t sens
     uint8_t rc = 0;
     uint8_t nof_retries = 0;
 
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
+    icmReadTempData(imu_number);
+
     do {
-    	readReg(imu_number, ICM_INT_STATUS_1, &statusData);
+    	readReg(imu_number, ICM_USER_BANK_0, ICM_INT_STATUS_1, &statusData);
 	nof_retries++;
     } while (((statusData & ICM_INT_STATUS_1_RAW_DATA_0_RDY_INT) != ICM_INT_STATUS_1_RAW_DATA_0_RDY_INT) &&
 	     (nof_retries < 0xff));
 
     NRF_LOG_DEBUG("statusData = 0x%x", statusData);
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
-    readRegs(imu_number, reg, rawData, NUM_MAGN_DATA);
+    readRegs(imu_number, ICM_USER_BANK_0, reg, rawData, NUM_MAGN_DATA);
     uint8_t status2 = rawData[8];
     for (uint8_t i = 0; i < NUM_MAGN_DATA; i++)
     {
@@ -580,7 +569,6 @@ void icm_readMagnetometerData(ble_ss_t *p_sensor_service, char reg, uint8_t sens
 		  imu_data->packet_length,
 		  imu_data->data_x.u, imu_data->data_y.u, imu_data->data_z.u);
 
-    writeReg(imu_number, ICM_REG_BANK_SEL, ICM_USER_BANK_0);
     rc = icm_stream_update(p_sensor_service, imu_data);
     if(rc == 0x8)
     {
