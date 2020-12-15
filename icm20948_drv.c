@@ -544,11 +544,11 @@ void icm_readMagnetometerData(ble_ss_t *p_sensor_service, char reg, uint8_t sens
 
     NRF_LOG_DEBUG("statusData = 0x%x", statusData);
     readRegs(imu_number, ICM_USER_BANK_0, reg, rawData, NUM_MAGN_DATA);
-    uint8_t status2 = rawData[8];
-    for (uint8_t i = 0; i < NUM_MAGN_DATA; i++)
-    {
-	NRF_LOG_DEBUG("Magneterometer raw data%d = 0x%x", i, rawData[i]);
-    }
+    uint8_t status2 = rawData[NUM_MAGN_DATA];
+    /* Todo: for (uint8_t i = 0; i < NUM_MAGN_DATA; i++) */
+    /* { */
+    /* 	NRF_LOG_DEBUG("Magneterometer raw data%d = 0x%x", i, rawData[i]); */
+    /* } */
 
     /*
      * Set device id and packet length.
